@@ -68,6 +68,8 @@ printf 'fix: thing\n\nWhy it changed.\n\nCo-Authored-By: Claude <noreply@anthrop
 sh "$HOOK" msg; out=$(cat msg); rc=$?
 expect "commit-msg strips the trailer" 0 "Why it changed" $rc "$out"
 if grep -q -i 'anthropic' msg || [ -z "$(tail -n 1 msg)" ]; then failn=$((failn+1)); echo "FAIL: commit-msg left the trailer or a trailing blank line"; cat msg; else pass=$((pass+1)); fi
+printf 'feat: x\n\nStrips the trailer or "Generated with Claude Code".\n\nGenerated with [Claude Code](https://claude.com/claude-code)\n' > msg; sh "$HOOK" msg
+if grep -q 'Strips the trailer' msg && ! grep -q 'claude.com' msg; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: commit-msg must keep a mention and drop the link line"; cat msg; fi
 printf 'docs: x\n' > msg; sh "$HOOK" msg
 if [ "$(cat msg)" = "docs: x" ]; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: commit-msg changed a clean message"; fi
 

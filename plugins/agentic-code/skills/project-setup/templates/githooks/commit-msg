@@ -1,9 +1,11 @@
 #!/bin/sh
 # Removes AI attribution lines (the Claude co-author trailer, "Generated with Claude Code")
 # from every commit message, whoever wrote it, and the blank lines they leave at the end.
+# Only the attribution lines themselves go: a line that merely mentions them stays.
 # Enabled together with pre-commit: git config core.hooksPath .githooks
 tmp="$1.tmp.$$"
-awk 'tolower($0) ~ /noreply@anthropic\.com|generated with \[?claude code/ { next }
+awk 'tolower($0) ~ /^[[:space:]]*co-authored-by:.*noreply@anthropic\.com/ { next }
+     tolower($0) ~ /generated with \[claude code\]\(/ { next }
      { line[++n] = $0 }
      END { while (n > 0 && line[n] ~ /^[[:space:]]*$/) n--; for (i = 1; i <= n; i++) print line[i] }' "$1" > "$tmp" \
   && mv "$tmp" "$1"

@@ -72,6 +72,7 @@ class GuardTest(unittest.TestCase):
             ("gh pr create --title t --body 'body\n\nGenerated with [Claude Code](https://claude.com/claude-code)'", "deny"),
             ("git commit -m 'fix: thing'", "allow"),
             ("grep -rn 'noreply" + "@anthropic.com' .", "allow"),
+            ("git commit -m 'feat: x' -m 'strips the trailer or \"Generated with Claude Code\"'", "allow"),
         ]
         for command, expected in cases:
             with self.subTest(command=command):

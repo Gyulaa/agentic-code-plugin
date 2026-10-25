@@ -79,7 +79,8 @@ def decide(command, rules):
 
 
 COMMIT_OR_PR = re.compile(r"\bgit\b[^\n;&|]*\bcommit\b|\bgh\s+pr\s+(create|edit)\b")
-AI_ATTRIBUTION = re.compile(r"noreply@anthropic\.com|Generated with \[?Claude Code", re.IGNORECASE)
+# The attribution lines themselves, not a sentence that mentions them.
+AI_ATTRIBUTION = re.compile(r"Co-Authored-By:[^\n]*noreply@anthropic\.com|Generated with \[Claude Code\]\(", re.IGNORECASE)
 
 
 def attribution_decision(command):
