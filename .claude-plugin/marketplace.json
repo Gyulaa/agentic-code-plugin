@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentic-code-plugin",
+  "description": "Gyula's Claude Code workflow: a disciplined, token-efficient way of working on any codebase, and a setup skill that builds or restructures a project for it.",
+  "owner": {
+    "name": "Gyula"
+  },
+  "plugins": [
+    {
+      "name": "agentic-code",
+      "description": "General engineering skills (working mode, quality gate, git workflow, matching the codebase, privacy check, resume/save) and a project setup skill that scaffolds a new project or restructures an existing one.",
+      "source": "./plugins/agentic-code",
+      "category": "development"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Text files are always LF in the repo (macOS and Linux).
+* text=auto eol=lf

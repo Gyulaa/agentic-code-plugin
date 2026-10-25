@@ -1,0 +1,17 @@
+{
+  "description": "Project guard: enforces .claude/guard.json (deny or ask) on shell commands. Does nothing in projects without a guard file.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

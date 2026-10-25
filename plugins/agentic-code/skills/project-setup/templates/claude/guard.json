@@ -1,0 +1,24 @@
+{
+  "_comment": "Enforced by the agentic-code plugin's guard hook on every shell command Claude runs in this project. 'match' and 'unless' are Python regular expressions. action: deny (blocked) or ask (the user confirms). Replace the examples with this project's production identifiers.",
+  "rules": [
+    {
+      "name": "production Firebase project",
+      "match": "firebase\\b.*\\b(deploy|firestore:delete|database:remove|auth:import)\\b|my-prod-project",
+      "unless": "--project[= ](my-test-project|demo-[\\w-]+)\\b",
+      "action": "deny",
+      "reason": "Production is read-only for Claude. Use --project my-test-project or an emulator (demo-*)."
+    },
+    {
+      "name": "push to the default branch",
+      "match": "git\\s+push\\b.*\\b(main|master)\\b",
+      "action": "deny",
+      "reason": "Never push to the default branch; everything goes through a pull request."
+    },
+    {
+      "name": "deploy",
+      "match": "\\b(vercel\\s+--prod|fly\\s+deploy|netlify\\s+deploy\\s+--prod)\\b",
+      "action": "ask",
+      "reason": "Deploying needs the user's explicit permission."
+    }
+  ]
+}

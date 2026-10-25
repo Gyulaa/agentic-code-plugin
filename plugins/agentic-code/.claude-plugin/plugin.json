@@ -1,0 +1,8 @@
+{
+  "name": "agentic-code",
+  "description": "General engineering skills (working mode, quality gate, git workflow, matching the codebase, privacy check, resume/save) and a project setup skill that scaffolds a new project or restructures an existing one.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Gyula"
+  }
+}
