@@ -17,7 +17,7 @@ Use the patterns the code already uses for permission gates, error responses, da
 
 ## The file's idiom
 - Names, structure, error handling, how state is passed. Before creating a new file, read its neighbour.
-- Colours, spacing and radii from the design system's tokens, never literals.
+- Colours, spacing and radii from the design system's tokens (the project's `DESIGN.md` and theme files), never literals.
 - Don't reformat, rename or "tidy" what you were not asked to touch.
 - Comments in the language and density of the surrounding file.
 

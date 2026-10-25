@@ -36,4 +36,4 @@ git config core.hooksPath .githooks   # once per clone
 
 ## Working mode
 When compacting, keep the list of modified files, the check command and any open decision.
-Use the agentic-code skills: `working-mode` always, `quality-gate` and `match-the-codebase` before a code change, `spec` before anything bigger than a one-sentence diff, `git-workflow` before a branch, commit or PR{{PRIVACY_LINE}}. Start a session with `/agentic-code:resume-work`, end it with `/agentic-code:save-work`.
+Use the agentic-code skills: `working-mode` always, `quality-gate` and `match-the-codebase` before a code change, `spec` before anything bigger than a one-sentence diff, `git-workflow` before a branch, commit or PR{{PRIVACY_LINE}}{{DESIGN_LINE}}. Start a session with `/agentic-code:resume-work`, end it with `/agentic-code:save-work`.
