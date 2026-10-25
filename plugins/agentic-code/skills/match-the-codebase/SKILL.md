@@ -28,6 +28,7 @@ Use the patterns the code already uses for permission gates, error responses, da
 - A silently swallowed exception (the exception: a deliberately guarded fan-out where each query fails on its own, with a comment saying so).
 - An invented field name, endpoint, package or key. If you don't know it, find it or ask.
 - A defensive rewrite of working code only because it looks unusual.
+- Anything you would not put in a public repository: secrets, credentials, personal data, local paths or hostnames, private details of other projects, or third-party text and code the licence does not allow. Write every commit as if the repository were public.
 - In user-facing text: the em dash (—) and other tells of machine-written copy, unless the project says otherwise. Use a comma, colon, parentheses or two sentences.
 
 ## Do what was asked, completely

@@ -2,9 +2,10 @@
 
 A Claude Code plugin for working on any codebase the disciplined way: accurate answers from few tokens, a quality gate before every change, strict git and permission rules, and a setup skill that builds this working environment for a new project or restructures an existing one.
 
-It grew out of the workflow used on the Onix project and is generalised here for any project, personal or team.
+It is meant for any project, personal or team.
 
 ## What's new
+- **0.3.1 (2026-10-25):** `match-the-codebase` treats every commit as if the repository were public: no secrets, credentials, personal data, local paths or hostnames, private details of other projects, or third-party text the licence does not allow.
 - **0.3.0 (2026-10-25):** no AI attribution anywhere: the hook refuses a commit or PR command carrying the Claude co-author trailer or "Generated with Claude Code", and `project-setup` adds a `commit-msg` hook and the `attribution` setting. New `improve-workflow` skill (evidence, research from reliable sources, measured changes); `working-mode` looks things up after two failed attempts. `project-setup` writes a human README with a "What's new" section that `save-work` keeps current, and offers a code graph (graphify) for large codebases.
 - **0.2.0 (2026-10-25):** `spec` skill; never weaken a test to get green; minimal human-reviewed `CLAUDE.md`; permission allowlist; the guard checks each part of a chained command. `resume`/`save` renamed to `resume-work`/`save-work`.
 - **0.1.0 (2026-10-24):** first version.
