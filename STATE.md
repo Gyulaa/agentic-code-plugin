@@ -6,7 +6,7 @@ Frissítve: 2026-10-25. Egy oldal maradjon: a `/agentic-code:save-work` írja á
 Az `agentic-code` Claude Code plugin forrása (skillek, guard hook, `project-setup` sablonok).
 
 ## Most
-- 0.4.0 készül a `feat/design-skills` ágon: `design`, `design-review` és `seo` skill, `slop_check.py` és `seo_check.py` (kérésre), a `project-setup`, `quality-gate`, `privacy-check` és `match-the-codebase` igazítva. Spec: `docs/specs/2026-10-25-design-and-seo-skills.md`.
+- 0.4.0 kész a `feat/design-skills` ágon (kiadási commit is): `design`, `design-review` és `seo` skill, `slop_check.py` és `seo_check.py` (kérésre), a `project-setup`, `quality-gate`, `privacy-check` és `match-the-codebase` igazítva. Spec: `docs/specs/2026-10-25-design-and-seo-skills.md`.
 - A kutatás helyben, a gitben nincs: `research/design-skills-research.md`, `research/copy-research.md`, `research/seo-research.md`.
 - 0.3.1 a `main`-ben (a nyilvános-commit szabály).
 
