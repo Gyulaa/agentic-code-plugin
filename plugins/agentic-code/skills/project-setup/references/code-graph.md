@@ -1,6 +1,6 @@
 # Optional: a code graph (graphify)
 
-A code graph answers structural questions ("who calls this?", "how does A reach B?", "what does this repo call in that one?") from an index instead of reading files. On the Onix project (a Flutter app plus three repos) it cut the tokens of cross-repo questions by about 99% and of verification tasks by about 98%, at the same accuracy. Those are one project's measurements; on a small codebase grep is just as good and costs nothing to set up.
+A code graph answers structural questions ("who calls this?", "how does A reach B?", "what does this repo call in that one?") from an index instead of reading files. On one Flutter app with three companion repos it cut the tokens of cross-repo questions by about 99% and of verification tasks by about 98%, at the same accuracy. Those are one project's measurements; on a small codebase grep is just as good and costs nothing to set up.
 
 ## When to offer it
 - **Offer it:** more than roughly 300 source files, or several repos whose connections matter (an app calling a backend), or the user asks.
