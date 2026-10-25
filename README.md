@@ -94,3 +94,7 @@ claude plugin validate . && claude plugin validate plugins/agentic-code
 ```
 
 Everything works with the bash 3.2 and python3 that ship with macOS, and on Linux.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE).
