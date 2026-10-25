@@ -6,7 +6,7 @@ argument-hint: "[new | existing] [path]"
 
 # Project setup
 
-Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `resume-work`, `save-work`) assume this layout.
+Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `design`, `design-review`, `seo`, `resume-work`, `save-work`) assume this layout.
 
 Files next to this SKILL.md: `references/interview.md` (questions), `references/audit.md` (existing-project audit), `references/stacks.md` (check commands per stack), `references/code-graph.md` (optional code graph), `templates/` (the files to generate). Read a reference only when you reach the step that needs it.
 
@@ -46,6 +46,7 @@ Files next to this SKILL.md: `references/interview.md` (questions), `references/
    - Scale M/L: `docs/agent-brief.md` from `templates/agent-brief.md` (the block pasted at the top of every subagent prompt).
    - Scale M/L, or whenever other people read the repo: a README written for a person, not for Claude: what this is, how to start, the daily workflow, where things are, the rules, and a **"What's new"** section at the top (newest first, one dated line each, what changed and what to do differently). `save-work` keeps it current, so someone back from a break reads only that section.
    - Large codebases or several connected repos: offer the code graph from `references/code-graph.md`. Don't add it to small projects.
+   - A project with a user interface: offer a `DESIGN.md` at the root, written with the `design` skill from its `templates/DESIGN.md` (the Google Stitch format: design tokens plus how to use them). Don't fill it with invented values: ask, or derive it from an existing theme.
 5. **Verify:** run `scripts/check.sh` once. If the project has no tests yet, the test step is skipped with a note, not faked. Run the guard against one forbidden and one allowed example command if you created it.
 6. **Report:** what was created, how to use it day to day (`/agentic-code:resume-work` at the start, `/agentic-code:save-work` at the end, `scripts/check.sh` before a commit), and which skills apply (see "Skills to recommend" below). Offer the first commit; commit only on a yes.
 
@@ -62,6 +63,8 @@ After setup, tell the user which skills apply to this project and when:
 - always: `working-mode` (context order, tokens, safety), `git-workflow`;
 - before any code change: `quality-gate` and `match-the-codebase`;
 - if the product handles other people's personal data: `privacy-check`;
+- if it has a user interface (web or native): `design` for new screens and redesigns, `design-review` after a large UI change;
+- if it has public pages that should be found in search: `seo`;
 - daily: `/agentic-code:resume-work` and `/agentic-code:save-work`;
 - every few weeks, or when the Friction list grows: `/agentic-code:improve-workflow`.
-If the project needs something these don't cover (a recurring domain procedure, a deploy runbook, a design system), propose a project-local skill in `.claude/skills/<name>/SKILL.md` with a one-line description of what it would hold, and write it only if the user wants it.
+If the project needs something these don't cover (a recurring domain procedure, a deploy runbook), propose a project-local skill in `.claude/skills/<name>/SKILL.md` with a one-line description of what it would hold, and write it only if the user wants it.

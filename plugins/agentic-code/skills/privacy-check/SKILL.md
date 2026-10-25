@@ -12,7 +12,7 @@ Did this change alter:
 1. **what personal data we collect** (a new field, a log line with a name or e-mail, an analytics event, a cookie, a device identifier)?
 2. **how long we keep it** (a new store, a cache, a backup, a log, deletion that no longer reaches something)?
 3. **who can access it** (a new role, a share, an export, an admin screen, a support tool)?
-4. **which third party processes it** (a new SDK, API, hosting region, e-mail or analytics provider, AI service)?
+4. **which third party processes it** (a new SDK, API, hosting region, e-mail or analytics provider, AI service, or a font, embed or script loaded from someone else's server, which sends them the visitor's IP address)?
 
 If all four are no, say "privacy: no change" in one line and move on.
 

@@ -37,7 +37,7 @@ Done means: the acceptance criteria are met, the machine check is green, and the
 | Level | What |
 |---|---|
 | **The machine, always** | pre-commit hook (check script), lint rules, CI on pull requests |
-| **Claude, when warranted** | steps 1-9 above; UI and accessibility tests on UI changes; independent review on large changes |
+| **Claude, when warranted** | steps 1-9 above; UI and accessibility tests on UI changes; `design` rules for UI work, `design-review` after a large UI change, `seo` on public pages; independent review on large changes |
 | **Claude proposes, the user starts** | mutation testing, a coverage report on a larger branch, a security review, a dependency upgrade |
 | **The human** | product decisions, PR review, testing on a real device, priorities, permission to push and open PRs |
 

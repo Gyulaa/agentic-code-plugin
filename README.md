@@ -1,10 +1,11 @@
 # agentic-code
 
-A Claude Code plugin for working on any codebase the disciplined way: accurate answers from few tokens, a quality gate before every change, strict git and permission rules, and a setup skill that builds this working environment for a new project or restructures an existing one.
+A Claude Code plugin for working on any codebase the disciplined way: accurate answers from few tokens, a quality gate before every change, strict git and permission rules, design and search skills for websites and apps, and a setup skill that builds this working environment for a new project or restructures an existing one.
 
 It is meant for any project, personal or team.
 
 ## What's new
+- **0.4.0 (2026-10-25):** three new skills. `design` builds websites and apps (web, iOS, Android, Flutter) that don't look machine-made: it keeps a `DESIGN.md` in the Google Stitch format, plans from the subject before coding, writes copy that persuades honestly, and checks the result in screenshots. `design-review` ranks accessibility, craft, platform and copy problems and fixes only what you pick. `seo` covers classic and AI search: server-rendered HTML, crawler access per search and training bot, content answer engines can quote, metadata, structured data. Two on-request checkers: `slop_check.py` and `seo_check.py`. `project-setup` now asks about UI and public pages and offers a `DESIGN.md`. The plugin is now MIT-licensed.
 - **0.3.1 (2026-10-25):** `match-the-codebase` treats every commit as if the repository were public: no secrets, credentials, personal data, local paths or hostnames, private details of other projects, or third-party text the licence does not allow.
 - **0.3.0 (2026-10-25):** no AI attribution anywhere: the hook refuses a commit or PR command carrying the Claude co-author trailer or "Generated with Claude Code", and `project-setup` adds a `commit-msg` hook and the `attribution` setting. New `improve-workflow` skill (evidence, research from reliable sources, measured changes); `working-mode` looks things up after two failed attempts. `project-setup` writes a human README with a "What's new" section that `save-work` keeps current, and offers a code graph (graphify) for large codebases.
 - **0.2.0 (2026-10-25):** `spec` skill; never weaken a test to get green; minimal human-reviewed `CLAUDE.md`; permission allowlist; the guard checks each part of a chained command. `resume`/`save` renamed to `resume-work`/`save-work`.
@@ -20,6 +21,8 @@ Update with `/plugin marketplace update agentic-code-plugin`.
 - ETH Zurich and LogicStar, *Evaluating AGENTS.md* (arXiv 2602.11988): auto-generated context files hurt more than they help; keep them minimal and human-curated.
 - METR, [the 2025 randomized study](https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/) (developers 19% slower while feeling faster): measure, don't assume.
 - Simon Willison's "lethal trifecta": private data + untrusted content + a way out is how agents leak data.
+- Design: Anthropic, [Improving frontend design through Skills](https://claude.com/resources/articles/improving-frontend-design-through-skills) (without direction a model converges on the most probable look); Google Stitch's [DESIGN.md format](https://github.com/google-labs-code/design.md); WCAG 2.2; the [Vercel Web Interface Guidelines](https://vercel.com/design/guidelines); [Impeccable](https://github.com/pbakaus/impeccable)'s idea of surface modes; Emil Kowalski's motion numbers; Nielsen Norman Group on writing for the web and tone of voice.
+- Search: Google Search Central, [AI features and your website](https://developers.google.com/search/docs/appearance/ai-features) (no special optimisation for AI Overviews and AI Mode); Vercel, [The rise of the AI crawler](https://vercel.com/blog/the-rise-of-the-ai-crawler) (AI crawlers do not run JavaScript); Aggarwal et al., [GEO](https://arxiv.org/abs/2311.09735) (KDD 2024), read with its limits.
 
 ## What is inside
 
@@ -31,10 +34,15 @@ Update with `/plugin marketplace update agentic-code-plugin`.
 | `match-the-codebase` | automatically, when writing code | Reuse before adding, no new dependency without asking, the file's idiom, what we never ship |
 | `spec` | automatically for non-trivial changes, or `/agentic-code:spec <feature>` | Explore read-only, interview you about the hard parts, write a self-contained spec with tasks and an end-to-end check, implement it in a fresh session, review against it |
 | `privacy-check` | automatically, in products with users | Four questions after every change; keeps published privacy documents true to the code |
+| `design` | automatically for UI work, or `/agentic-code:design <what>` | Websites, apps and dashboards that don't look machine-made: a `DESIGN.md` in the Google Stitch format, the surface's mode, a plan before code, copy that persuades honestly, a screenshot check; web, iOS, Android and Flutter |
+| `design-review` | after a large UI change, or `/agentic-code:design-review [what]` | Accessibility, craft, platform fit, generic patterns and copy, ranked by severity with evidence; fixes only what you pick |
+| `seo` | automatically for public websites, or `/agentic-code:seo [page or URL]` | Classic and AI search (AI Overviews, ChatGPT, Perplexity, Claude, Copilot): server-rendered HTML, crawler access, content answer engines can quote, metadata, structured data, honest measurement |
 | `project-setup` | `/agentic-code:project-setup [new\|existing]` | Interviews you and scaffolds a new project, or audits an existing one and proposes and applies a restructure |
 | `resume-work` | `/agentic-code:resume-work [topic]` | Picks up work from the one-page `STATE.md`, checks it against git and open PRs |
 | `save-work` | `/agentic-code:save-work [summary]` | Writes the session's outcome into `STATE.md`, the decision and bug logs, and the README's "What's new" |
 | `improve-workflow` | `/agentic-code:improve-workflow [topic]` | A short retro: where time and tokens went, what reliable sources recommend, a few measured changes for you to pick |
+
+The `design` and `seo` skills each bring a checker you or Claude run on request, using only python3: `slop_check.py` finds code-level tells of generic design (animating everything, gradient text, disabled zoom, fonts from a CDN, inflated copy), and `seo_check.py` checks built pages or URLs for metadata, canonicals, headings, JSON-LD, images, text visible without JavaScript, `robots.txt` per search and AI crawler, and the sitemap.
 
 Plus a **project guard** hook: if a project has `.claude/guard.json`, every shell command Claude runs there is checked against its rules (deny, or ask you first), segment by segment, so an allowed part of a chained command cannot excuse a forbidden one. Projects without the file get no project rules. A `~/.claude/guard.json` guards every project under your home folder. In every project, the hook also refuses a `git commit` or `gh pr create/edit` whose message carries AI attribution (the Claude co-author trailer or "Generated with Claude Code"); a project that wants it sets `"allow_ai_attribution": true` in its guard file. It is a guard rail against mistakes, not a security boundary: a determined command can always be phrased around a regex.
 
@@ -86,3 +94,7 @@ claude plugin validate . && claude plugin validate plugins/agentic-code
 ```
 
 Everything works with the bash 3.2 and python3 that ship with macOS, and on Linux.
+
+## Licence
+
+MIT, see [LICENSE](LICENSE).
