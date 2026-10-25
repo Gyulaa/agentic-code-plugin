@@ -30,6 +30,7 @@ git config core.hooksPath .githooks          # klónonként egyszer
 |---|---|
 | Hol tartunk, mi a következő | `STATE.md` |
 | Miért olyan, amilyen | `docs/decisions.md` |
+| Egy nagyobb változás terve | `docs/specs/` |
 | Mit tud a plugin, telepítés, fejlesztői parancsok | `README.md` |
 | Kutatás egy készülő skillhez (helyi, nincs a gitben) | `research/` |
 

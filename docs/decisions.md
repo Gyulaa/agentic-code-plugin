@@ -2,6 +2,11 @@
 
 Tartós döntésenként egy bejegyzés, legújabb felül. Ha egy döntés változik, a helyén javítjuk (a változás dátumával), nem duplikáljuk.
 
+## 2026-10-25 · Design és keresés: három skill, két kérésre futó ellenőrző
+- **Döntés:** `design` (DESIGN.md a Google Stitch formátumában, a felület módja, terv a kód előtt, képernyőképes ellenőrzés, szövegírás a `references/copy.md`-ben), `design-review` (rangsorolt átnézés, javítás csak választás után) és külön `seo` (klasszikus és AI-keresés). A `slop_check.py` és a `seo_check.py` csak kérésre fut, nem hook. Flutter az első körtől; 3D csak pár sorban; `llms.txt` és "AI-schema" nem alapértelmezés.
+- **Miért:** A SEO máskor kell, mint a design (nyilvános oldal design nélkül is, app és belső felület SEO nélkül). A Google szerint az AI-keresésnek nincs külön követelménye; a mért különbség a JavaScriptet nem futtató AI-crawlerek és a crawlerenkénti robots-szabály. A gépi ellenőrzők mintát találnak, nem minőséget, ezért nem blokkolhatnak commitot.
+- **Érinti:** `plugins/agentic-code/skills/{design,design-review,seo}/`, a `project-setup`, `quality-gate`, `privacy-check` és `match-the-codebase` egy-egy sora, `tests/test_slop_check.py`, `tests/test_seo_check.py`. Spec: `docs/specs/2026-10-25-design-and-seo-skills.md`; háttér helyben a `research/` három jegyzetében.
+
 ## 2026-10-25 · A repó nyilvánossá tehető állapotban marad; a kutatás helyben
 - **Döntés:** Minden commitolt fájl nyilvánosan is vállalható. A kutatási jegyzetek (források kivonatai, harmadik fél anyagainak értékelése) a gitignore-olt `research/` mappába kerülnek. A pluginban a `match-the-codebase` "What we never ship" listája is kimondja: minden commit úgy készül, mintha a repó nyilvános lenne.
 - **Miért:** A plugin később nyilvános lehet. A git története a commitolt fájlokat akkor is megőrzi, ha később töröljük őket, a kutatásokért pedig Gyula nem akar nyilvánosan felelősséget vállalni.

@@ -6,18 +6,20 @@ Frissítve: 2026-10-25. Egy oldal maradjon: a `/agentic-code:save-work` írja á
 Az `agentic-code` Claude Code plugin forrása (skillek, guard hook, `project-setup` sablonok).
 
 ## Most
-- 0.3.1 (2026-10-25): a `match-the-codebase` minden commitot nyilvánosnak tekint; a README és a skillek nem nevezik meg, melyik projektből nőtt ki a plugin. A repó nyilvánossá tehető állapotban marad (`docs/decisions.md`).
-- A repó saját munkakörnyezete (`CLAUDE.md`, `STATE.md`, `docs/decisions.md`, `scripts/check.sh`, pre-commit hook) a `main`-ben.
-- Kész a kutatás két design skillhez (`design`, `design-review`) és a szövegíráshoz: `research/design-skills-research.md`, `research/copy-research.md` (helyi, nincs a gitben).
+- 0.4.0 készül a `feat/design-skills` ágon: `design`, `design-review` és `seo` skill, `slop_check.py` és `seo_check.py` (kérésre), a `project-setup`, `quality-gate`, `privacy-check` és `match-the-codebase` igazítva. Spec: `docs/specs/2026-10-25-design-and-seo-skills.md`.
+- A kutatás helyben, a gitben nincs: `research/design-skills-research.md`, `research/copy-research.md`, `research/seo-research.md`.
+- 0.3.1 a `main`-ben (a nyilvános-commit szabály).
 
 ## Nyitott ágak és PR-ek
-- (nincs)
+- `feat/design-skills` (helyi, még nincs pusholva).
 
 ## Blokkol / várunk rá
-- (semmi)
+- Push és PR Gyula engedélyére.
+- Nyilvános kiadás előtt LICENSE kell (a `claude plugin validate` jelzi); a licencről Gyula dönt.
 
 ## Következő lépés
-1. `spec` a két design skillre a `research/` két jegyzete alapján, új `feat/design-skills` ágon. A döntések a `research/design-skills-research.md` 8. pontjában: két skill, Stitch-kompatibilis `DESIGN.md`, `slop_check.py` csak kérésre, képernyőkép azzal, ami elérhető, Flutter az első körben, a szövegírás a `design` referenciája, 3D csak pár sorban.
+1. Push és PR a `feat/design-skills` ágról, merge után `/plugin marketplace update agentic-code-plugin`.
+2. Kipróbálás egy valódi projekten: egy landing oldal és egy Flutter-képernyő a `design` skillel, utána `design-review` és `seo`; a tapasztalat a Súrlódás listába.
 
 ## Súrlódás
 - (még nincs; soronként egy: mi volt lassú vagy hibázott ismételten, milyen gyakran)
