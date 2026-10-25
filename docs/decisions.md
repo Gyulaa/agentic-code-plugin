@@ -2,6 +2,11 @@
 
 Tartós döntésenként egy bejegyzés, legújabb felül. Ha egy döntés változik, a helyén javítjuk (a változás dátumával), nem duplikáljuk.
 
+## 2026-10-25 · MIT licenc
+- **Döntés:** A repó MIT licenc alatt áll (`LICENSE` a gyökérben, „Copyright (c) 2026 Gyula Miklós”; `"license": "MIT"` a `plugin.json`-ban).
+- **Miért:** Elsősorban saját használatra, ingyen készül, de nyilvános lehet. Az MIT a legegyszerűbb megengedő licenc, kizárja a felelősséget („as is”), és a plugin-katalógus is megköveteli a licencet.
+- **Érinti:** `LICENSE`, `README.md` (Licence szakasz), `plugins/agentic-code/.claude-plugin/plugin.json`.
+
 ## 2026-10-25 · Design és keresés: három skill, két kérésre futó ellenőrző
 - **Döntés:** `design` (DESIGN.md a Google Stitch formátumában, a felület módja, terv a kód előtt, képernyőképes ellenőrzés, szövegírás a `references/copy.md`-ben), `design-review` (rangsorolt átnézés, javítás csak választás után) és külön `seo` (klasszikus és AI-keresés). A `slop_check.py` és a `seo_check.py` csak kérésre fut, nem hook. Flutter az első körtől; 3D csak pár sorban; `llms.txt` és "AI-schema" nem alapértelmezés.
 - **Miért:** A SEO máskor kell, mint a design (nyilvános oldal design nélkül is, app és belső felület SEO nélkül). A Google szerint az AI-keresésnek nincs külön követelménye; a mért különbség a JavaScriptet nem futtató AI-crawlerek és a crawlerenkénti robots-szabály. A gépi ellenőrzők mintát találnak, nem minőséget, ezért nem blokkolhatnak commitot.
