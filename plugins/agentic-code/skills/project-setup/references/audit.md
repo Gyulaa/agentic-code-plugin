@@ -21,9 +21,9 @@ Goal: a reliable picture in a few thousand tokens. Read manifests, configuration
 Then:
 - **Keep:** what works and must not be broken by the setup.
 - **Proposed changes,** numbered, most valuable and smallest first. Typical ones:
-  1. a short `CLAUDE.md` (or trimming an overlong one; move detail to the README or a skill);
+  1. a short `CLAUDE.md` (or trimming an overlong one: delete what the code already says, move detail to the README or a skill, turn must-always rules into hooks; an overlong file makes Claude ignore the rules that matter);
   2. `STATE.md` and the decision and bug logs;
-  3. `scripts/check.sh` wrapping the existing commands, plus the pre-commit hook;
+  3. `scripts/check.sh` wrapping the existing commands, plus the pre-commit hook and a `.claude/settings.json` allowlist for it;
   4. `.claude/guard.json` if production is reachable;
   5. fixes the audit found (ignored `.env`, `.gitattributes`, a case-sensitivity bug, a CI gap), each as its own commit;
   6. optional: a project-local skill for a recurring procedure.

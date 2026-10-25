@@ -6,7 +6,7 @@ argument-hint: "[new | existing] [path]"
 
 # Project setup
 
-Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `resume`, `save`) assume this layout.
+Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `resume-work`, `save-work`) assume this layout.
 
 Files next to this SKILL.md: `references/interview.md` (questions), `references/audit.md` (existing-project audit), `references/stacks.md` (check commands per stack), `templates/` (the files to generate). Read a reference only when you reach the step that needs it.
 
@@ -14,6 +14,8 @@ Files next to this SKILL.md: `references/interview.md` (questions), `references/
 - **Ask, then show the plan, then write.** Nothing is written before the user approves the file list. Never overwrite an existing file: merge into it, and show the diff.
 - **As small as the project allows.** A weekend project gets four files; a team product with several repos gets the full layout. Every file must earn its place: if nobody will read or run it, leave it out.
 - **Shared repo or personal?** In a repo other people work in, adding files is the team's decision: commit them on a branch and propose a PR, and put personal preferences into `CLAUDE.local.md` (git-ignored), never into the shared `CLAUDE.md`.
+- **`CLAUDE.md` holds only what Claude cannot infer from the code,** and the user reviews it. It is loaded every session, so every line costs tokens and attention: for each line ask "would removing this cause a mistake?". No file-by-file tour, no architecture essay, no generic advice ("write clean code"). In a 2026 ETH Zurich study, auto-generated context files lowered task success in most settings and raised cost by about 20%, while human-curated ones helped slightly: write a minimal draft and ask the user to edit it.
+- **Rules that must hold every time become hooks or scripts,** not more `CLAUDE.md` text: instructions are advisory, hooks are deterministic.
 - **Verify what you generate:** the check script must actually run and pass (or fail for a real reason) before you call the setup done.
 - Reply in the user's language. Generated `CLAUDE.md` and notes use the language the user picks (default: the language of the conversation); code-facing files (scripts, commit messages) follow the project's convention, default English.
 
@@ -38,9 +40,12 @@ Files next to this SKILL.md: `references/interview.md` (questions), `references/
    - `.githooks/pre-commit` from `templates/githooks/pre-commit`, and `git config core.hooksPath .githooks` (this is per clone; say it in the README too).
    - `.claude/guard.json` from `templates/claude/guard.json` **only if there is a production system** the agent must not change (a database, a deploy target, a payment account). The plugin's hook enforces it.
    - `CLAUDE.local.md` from `templates/CLAUDE.local.md`, and `CLAUDE.local.md` added to `.gitignore`.
+   - `.claude/settings.json` from `templates/claude/settings.json`: an allowlist for the safe, frequent commands (the check script, read-only git, the test runner), so the user is not clicking through approvals. Never allowlist push, deploy or anything touching production.
+   - If the user also uses other coding agents (Codex, Cursor, Gemini CLI): an `AGENTS.md` containing only `See CLAUDE.md.` plus anything tool-specific, so there is one source of truth.
+   - Optional, for long unattended runs: a `Stop` hook that runs `scripts/check.sh` and keeps the turn going until it passes (see the Claude Code hooks documentation). Offer it, don't add it by default.
    - Scale M/L: `docs/agent-brief.md` from `templates/agent-brief.md` (the block pasted at the top of every subagent prompt).
 5. **Verify:** run `scripts/check.sh` once. If the project has no tests yet, the test step is skipped with a note, not faked. Run the guard against one forbidden and one allowed example command if you created it.
-6. **Report:** what was created, how to use it day to day (`/resume` at the start, `/save` at the end, `scripts/check.sh` before a commit), and which skills apply (see "Skills to recommend" below). Offer the first commit; commit only on a yes.
+6. **Report:** what was created, how to use it day to day (`/agentic-code:resume-work` at the start, `/agentic-code:save-work` at the end, `scripts/check.sh` before a commit), and which skills apply (see "Skills to recommend" below). Offer the first commit; commit only on a yes.
 
 ## Mode B: an existing project
 1. **Audit, read-only,** with `references/audit.md`. It is cheap by design: manifests, top-level layout, existing instructions, git state, CI, test setup; no full-code reading.
@@ -55,5 +60,5 @@ After setup, tell the user which skills apply to this project and when:
 - always: `working-mode` (context order, tokens, safety), `git-workflow`;
 - before any code change: `quality-gate` and `match-the-codebase`;
 - if the product handles other people's personal data: `privacy-check`;
-- daily: `/resume` and `/save`.
+- daily: `/agentic-code:resume-work` and `/agentic-code:save-work`.
 If the project needs something these don't cover (a recurring domain procedure, a deploy runbook, a design system), propose a project-local skill in `.claude/skills/<name>/SKILL.md` with a one-line description of what it would hold, and write it only if the user wants it.

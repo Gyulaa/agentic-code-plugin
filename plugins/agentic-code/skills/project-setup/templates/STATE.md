@@ -1,6 +1,6 @@
 # State
 
-Updated: {{DATE}}. Keep this to one page: `/save` rewrites it, `/resume` reads it first.
+Updated: {{DATE}}. Keep this to one page: `/agentic-code:save-work` rewrites it, `/agentic-code:resume-work` reads it first.
 
 ## What this is
 {{ONE_SENTENCE_WHAT_IT_IS}}

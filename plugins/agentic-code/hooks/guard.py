@@ -49,18 +49,28 @@ def load_rules(guard_path):
     return rules
 
 
+# Rules are checked per command segment, so an allowed part ("--project test")
+# cannot excuse a forbidden part chained after it with && ; || | or a newline.
+SEGMENT_SPLIT = re.compile(r"&&|\|\||[;|\n]")
+
+
 def decide(command, rules):
-    """Returns (action, reason) for the first matching rule, or None."""
-    for rule in rules:
-        if not re.search(rule["match"], command):
-            continue
-        unless = rule.get("unless")
-        if unless and re.search(unless, command):
-            continue
-        name = rule.get("name", "guard rule")
-        reason = rule.get("reason", "blocked by the project guard")
-        return rule.get("action", "deny"), "%s: %s" % (name, reason)
-    return None
+    """Returns (action, reason) for the strictest matching rule, or None."""
+    found = None
+    for segment in SEGMENT_SPLIT.split(command):
+        for rule in rules:
+            if not re.search(rule["match"], segment):
+                continue
+            unless = rule.get("unless")
+            if unless and re.search(unless, segment):
+                continue
+            name = rule.get("name", "guard rule")
+            reason = rule.get("reason", "blocked by the project guard")
+            action = rule.get("action", "deny")
+            if action == "deny":
+                return action, "%s: %s" % (name, reason)
+            found = found or (action, "%s: %s" % (name, reason))
+    return found
 
 
 def respond(action, reason):

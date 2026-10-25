@@ -5,6 +5,8 @@
 #   base      what counts as changed (default: HEAD)
 # Exit code: 0 if everything passed, 1 otherwise.
 # Works with the bash 3.2 that ships with macOS and with Linux bash.
+# Limitation: --staged checks the working-tree version of the staged files, so a partially
+# staged file is checked as it is on disk.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 

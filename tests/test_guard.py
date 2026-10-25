@@ -51,7 +51,13 @@ class GuardTest(unittest.TestCase):
             ("firebase functions:list --project my-test-project", "allow"),
             ("git push origin main", "deny"),
             ("git push -u origin feat/login", "allow"),
+            ("git push -u origin feat/main-menu", "allow"),
+            ("git push origin HEAD:main", "deny"),
+            ("git push --force origin master && echo done", "deny"),
+            ("git push origin +main", "deny"),
             ("vercel --prod", "ask"),
+            ("firebase deploy --project my-test-project && firebase deploy --project " + PROD, "deny"),
+            ("vercel --prod; git push origin main", "deny"),
             ("ls -la", "allow"),
         ]
         for command, expected in cases:

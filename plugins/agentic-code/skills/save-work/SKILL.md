@@ -1,6 +1,6 @@
 ---
-name: save
-description: Save the outcome of the current session into the project's notes - the one-page state file, decisions, bugs and, in larger projects, a session log - so the next session can resume cheaply. Use when the user invokes /save, after finishing a task, a commit or a decision, or before ending a long session.
+name: save-work
+description: Save the outcome of the current session into the project's notes - the one-page state file, decisions, bugs and, in larger projects, a session log - so the next session can resume cheaply. Use when the user invokes /agentic-code:save-work, after finishing a task, a commit or a decision, or before ending a long session.
 argument-hint: "[short description of what was done]"
 ---
 
