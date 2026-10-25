@@ -74,7 +74,11 @@ While developing the plugin itself, try a change without installing: `claude --p
 
 ## Development
 
+The repo uses its own setup: `CLAUDE.md`, `STATE.md` and `docs/decisions.md` at the root are for working on the plugin and are not shipped (only `plugins/agentic-code/` is).
+
 ```bash
+git config core.hooksPath .githooks     # once per clone: the pre-commit hook runs scripts/check.sh
+scripts/check.sh                        # everything below in one command; "OK" means green
 python3 -m unittest discover -s tests   # the guard hook
 bash tests/test_check.sh                # the check.sh template and the commit-msg hook
 claude plugin validate . && claude plugin validate plugins/agentic-code
