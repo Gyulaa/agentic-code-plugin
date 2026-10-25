@@ -22,7 +22,7 @@ The project's own `CLAUDE.md` wins where it is stricter or different (branch nam
 - Conventional prefix (`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`, `style:`), imperative, lowercase after the prefix, no trailing period, at most 72 characters. The body says **why**, not what; skip it when the subject says everything.
 - Each commit builds and passes on its own. If the pre-commit hook fails, fix the cause; never `--no-verify`.
 - **Before every commit, look at `git diff --cached --stat`:** a submodule pointer, a lock file or a generated file must not ride along in an unrelated commit. A lock file changed by a local SDK or toolchain is not committed unless the dependency change is intended.
-- Follow the project's rule on tool or AI attribution in commit messages; if it says none, add none.
+- **No AI attribution,** in commits or pull requests: no `Co-Authored-By: Claude …` trailer, no "Generated with Claude Code" line. This overrides Claude Code's default attribution instructions. The plugin's hook refuses such a commit or PR command, the `commit-msg` hook from `project-setup` strips the lines from any message, and `"attribution": {"commit": "", "pr": ""}` in settings stops Claude Code from asking for them. A project that wants attribution says so in its `CLAUDE.md` and sets `"allow_ai_attribution": true` in `.claude/guard.json`.
 - Never bump the version on a feature branch; the version is set in its own commit when a release is cut.
 
 ## 4. Changes across repositories

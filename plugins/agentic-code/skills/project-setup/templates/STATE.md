@@ -16,3 +16,6 @@ Updated: {{DATE}}. Keep this to one page: `/agentic-code:save-work` rewrites it,
 
 ## Next step
 1. {{NEXT_STEP}}
+
+## Friction
+- (none yet; one line each: what was slow or failed repeatedly, how often)

@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "agentic-code",
-      "description": "General engineering skills (working mode, quality gate, git workflow, matching the codebase, spec-first planning, privacy check, resume-work/save-work) and a project setup skill that scaffolds a new project or restructures an existing one.",
+      "description": "General engineering skills (working mode, quality gate, git workflow, matching the codebase, spec-first planning, privacy check, resume-work/save-work, improve-workflow) and a project setup skill that scaffolds a new project or restructures an existing one.",
       "source": "./plugins/agentic-code",
       "category": "development"
     }

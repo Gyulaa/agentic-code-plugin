@@ -4,6 +4,13 @@ A Claude Code plugin for working on any codebase the disciplined way: accurate a
 
 It grew out of the workflow used on the Onix project and is generalised here for any project, personal or team.
 
+## What's new
+- **0.3.0 (2026-10-25):** no AI attribution anywhere: the hook refuses a commit or PR command carrying the Claude co-author trailer or "Generated with Claude Code", and `project-setup` adds a `commit-msg` hook and the `attribution` setting. New `improve-workflow` skill (evidence, research from reliable sources, measured changes); `working-mode` looks things up after two failed attempts. `project-setup` writes a human README with a "What's new" section that `save-work` keeps current, and offers a code graph (graphify) for large codebases.
+- **0.2.0 (2026-10-25):** `spec` skill; never weaken a test to get green; minimal human-reviewed `CLAUDE.md`; permission allowlist; the guard checks each part of a chained command. `resume`/`save` renamed to `resume-work`/`save-work`.
+- **0.1.0 (2026-10-24):** first version.
+
+Update with `/plugin marketplace update agentic-code-plugin`.
+
 ## What it is built on
 - Anthropic, [Best practices for Claude Code](https://code.claude.com/docs/en/best-practices): give Claude a check it can run; explore, plan, then code; keep `CLAUDE.md` short; hooks for must-always rules; fresh-context review; `/clear` between tasks.
 - Anthropic, [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents): context as a finite budget, structured notes outside the window (`STATE.md`), just-in-time retrieval, subagents returning condensed summaries.
@@ -25,9 +32,10 @@ It grew out of the workflow used on the Onix project and is generalised here for
 | `privacy-check` | automatically, in products with users | Four questions after every change; keeps published privacy documents true to the code |
 | `project-setup` | `/agentic-code:project-setup [new\|existing]` | Interviews you and scaffolds a new project, or audits an existing one and proposes and applies a restructure |
 | `resume-work` | `/agentic-code:resume-work [topic]` | Picks up work from the one-page `STATE.md`, checks it against git and open PRs |
-| `save-work` | `/agentic-code:save-work [summary]` | Writes the session's outcome into `STATE.md`, the decision and bug logs |
+| `save-work` | `/agentic-code:save-work [summary]` | Writes the session's outcome into `STATE.md`, the decision and bug logs, and the README's "What's new" |
+| `improve-workflow` | `/agentic-code:improve-workflow [topic]` | A short retro: where time and tokens went, what reliable sources recommend, a few measured changes for you to pick |
 
-Plus a **project guard** hook: if a project has `.claude/guard.json`, every shell command Claude runs there is checked against its rules (deny, or ask you first), segment by segment, so an allowed part of a chained command cannot excuse a forbidden one. Projects without the file are not affected. A `~/.claude/guard.json` guards every project under your home folder. It is a guard rail against mistakes, not a security boundary: a determined command can always be phrased around a regex.
+Plus a **project guard** hook: if a project has `.claude/guard.json`, every shell command Claude runs there is checked against its rules (deny, or ask you first), segment by segment, so an allowed part of a chained command cannot excuse a forbidden one. Projects without the file get no project rules. A `~/.claude/guard.json` guards every project under your home folder. In every project, the hook also refuses a `git commit` or `gh pr create/edit` whose message carries AI attribution (the Claude co-author trailer or "Generated with Claude Code"); a project that wants it sets `"allow_ai_attribution": true` in its guard file. It is a guard rail against mistakes, not a security boundary: a determined command can always be phrased around a regex.
 
 ## Install (once per machine)
 
@@ -39,6 +47,12 @@ In Claude Code:
 ```
 
 The repository is private: the first command uses your git credentials for GitHub (`gh auth login` or an SSH key). If it cannot reach the repo, add it from a local clone instead: `/plugin marketplace add /path/to/agentic-code-plugin`.
+
+To stop Claude Code from asking for attribution at all, add this once to `~/.claude/settings.json`:
+
+```json
+"attribution": { "commit": "", "pr": "" }
+```
 
 Update later with `/plugin marketplace update agentic-code-plugin`. Nothing has to be copied into your projects: the skills are available in every project once the plugin is installed. Turn it off for one project with `"enabledPlugins": {"agentic-code@agentic-code-plugin": false}` in that project's `.claude/settings.json`.
 
@@ -54,15 +68,15 @@ While developing the plugin itself, try a change without installing: `claude --p
 
 | Scale | Files |
 |---|---|
-| S (personal, one repo) | `CLAUDE.md`, `CLAUDE.local.md` (git-ignored), `STATE.md`, `docs/decisions.md`, `docs/bugs.md`, `scripts/check.sh`, `.githooks/pre-commit`, `.claude/settings.json` (allowlist for safe commands) |
-| M (a product, one or two people) | S + `docs/agent-brief.md`, `.claude/guard.json` if there is production |
+| S (personal, one repo) | `CLAUDE.md`, `CLAUDE.local.md` (git-ignored), `STATE.md`, `docs/decisions.md`, `docs/bugs.md`, `scripts/check.sh`, `.githooks/pre-commit` and `commit-msg`, `.claude/settings.json` (allowlist for safe commands, no attribution) |
+| M (a product, one or two people) | S + `docs/agent-brief.md`, a README with "What's new", `.claude/guard.json` if there is production, a code graph if the codebase is large |
 | L (a team, several repos) | a notes folder or repo with one file per decision, bug, task and session, plus a parent-folder `CLAUDE.md` mapping the repos |
 
 ## Development
 
 ```bash
 python3 -m unittest discover -s tests   # the guard hook
-bash tests/test_check.sh                # the check.sh template
+bash tests/test_check.sh                # the check.sh template and the commit-msg hook
 claude plugin validate . && claude plugin validate plugins/agentic-code
 ```
 

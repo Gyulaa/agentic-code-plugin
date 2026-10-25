@@ -8,7 +8,7 @@ argument-hint: "[new | existing] [path]"
 
 Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `resume-work`, `save-work`) assume this layout.
 
-Files next to this SKILL.md: `references/interview.md` (questions), `references/audit.md` (existing-project audit), `references/stacks.md` (check commands per stack), `templates/` (the files to generate). Read a reference only when you reach the step that needs it.
+Files next to this SKILL.md: `references/interview.md` (questions), `references/audit.md` (existing-project audit), `references/stacks.md` (check commands per stack), `references/code-graph.md` (optional code graph), `templates/` (the files to generate). Read a reference only when you reach the step that needs it.
 
 ## Principles
 - **Ask, then show the plan, then write.** Nothing is written before the user approves the file list. Never overwrite an existing file: merge into it, and show the diff.
@@ -37,13 +37,15 @@ Files next to this SKILL.md: `references/interview.md` (questions), `references/
    - `STATE.md` from `templates/STATE.md`.
    - `docs/decisions.md`, `docs/bugs.md` from the templates (scale S/M); for scale L the folder layout described in `templates/notes-L.md`.
    - `scripts/check.sh` from `templates/scripts/check.sh`, configured with the stack's commands from `references/stacks.md`; `chmod +x`.
-   - `.githooks/pre-commit` from `templates/githooks/pre-commit`, and `git config core.hooksPath .githooks` (this is per clone; say it in the README too).
+   - `.githooks/pre-commit` and `.githooks/commit-msg` from `templates/githooks/` (the second strips AI attribution lines from every commit message), and `git config core.hooksPath .githooks` (this is per clone; say it in the README too).
    - `.claude/guard.json` from `templates/claude/guard.json` **only if there is a production system** the agent must not change (a database, a deploy target, a payment account). The plugin's hook enforces it.
    - `CLAUDE.local.md` from `templates/CLAUDE.local.md`, and `CLAUDE.local.md` added to `.gitignore`.
    - `.claude/settings.json` from `templates/claude/settings.json`: an allowlist for the safe, frequent commands (the check script, read-only git, the test runner), so the user is not clicking through approvals. Never allowlist push, deploy or anything touching production.
    - If the user also uses other coding agents (Codex, Cursor, Gemini CLI): an `AGENTS.md` containing only `See CLAUDE.md.` plus anything tool-specific, so there is one source of truth.
    - Optional, for long unattended runs: a `Stop` hook that runs `scripts/check.sh` and keeps the turn going until it passes (see the Claude Code hooks documentation). Offer it, don't add it by default.
    - Scale M/L: `docs/agent-brief.md` from `templates/agent-brief.md` (the block pasted at the top of every subagent prompt).
+   - Scale M/L, or whenever other people read the repo: a README written for a person, not for Claude: what this is, how to start, the daily workflow, where things are, the rules, and a **"What's new"** section at the top (newest first, one dated line each, what changed and what to do differently). `save-work` keeps it current, so someone back from a break reads only that section.
+   - Large codebases or several connected repos: offer the code graph from `references/code-graph.md`. Don't add it to small projects.
 5. **Verify:** run `scripts/check.sh` once. If the project has no tests yet, the test step is skipped with a note, not faked. Run the guard against one forbidden and one allowed example command if you created it.
 6. **Report:** what was created, how to use it day to day (`/agentic-code:resume-work` at the start, `/agentic-code:save-work` at the end, `scripts/check.sh` before a commit), and which skills apply (see "Skills to recommend" below). Offer the first commit; commit only on a yes.
 
@@ -60,5 +62,6 @@ After setup, tell the user which skills apply to this project and when:
 - always: `working-mode` (context order, tokens, safety), `git-workflow`;
 - before any code change: `quality-gate` and `match-the-codebase`;
 - if the product handles other people's personal data: `privacy-check`;
-- daily: `/agentic-code:resume-work` and `/agentic-code:save-work`.
+- daily: `/agentic-code:resume-work` and `/agentic-code:save-work`;
+- every few weeks, or when the Friction list grows: `/agentic-code:improve-workflow`.
 If the project needs something these don't cover (a recurring domain procedure, a deploy runbook, a design system), propose a project-local skill in `.claude/skills/<name>/SKILL.md` with a one-line description of what it would hold, and write it only if the user wants it.

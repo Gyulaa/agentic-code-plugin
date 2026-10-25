@@ -64,6 +64,24 @@ class GuardTest(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual(run_hook(command, self.sub), expected)
 
+    def test_ai_attribution_is_denied_everywhere(self):
+        trailer = "Co-Authored-By: Claude Opus <noreply" + "@anthropic.com>"
+        cases = [
+            ("git commit -m \"$(cat <<'EOF'\nfix: thing\n\n%s\nEOF\n)\"" % trailer, "deny"),
+            ("git -C repo commit -m 'feat: x' -m '%s'" % trailer, "deny"),
+            ("gh pr create --title t --body 'body\n\nGenerated with [Claude Code](https://claude.com/claude-code)'", "deny"),
+            ("git commit -m 'fix: thing'", "allow"),
+            ("grep -rn 'noreply" + "@anthropic.com' .", "allow"),
+        ]
+        for command, expected in cases:
+            with self.subTest(command=command):
+                self.assertEqual(run_hook(command, self.sub), expected)
+
+    def test_ai_attribution_can_be_allowed(self):
+        self.write_guard(json.dumps({"allow_ai_attribution": True, "rules": []}))
+        msg = "git commit -m 'x' -m 'Co-Authored-By: Claude <noreply" + "@anthropic.com>'"
+        self.assertEqual(run_hook(msg, self.sub), "allow")
+
     def test_broken_guard_asks(self):
         self.write_guard("{not json")
         self.assertEqual(run_hook("ls", self.project), "ask")

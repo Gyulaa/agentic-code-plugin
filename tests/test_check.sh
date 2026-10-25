@@ -62,5 +62,14 @@ expect "command with \$@" 0 "Format check" $rc "$out"
 out=$(TEST='' scripts/check.sh 2>&1); rc=$?
 expect "no tests configured" 0 "none configured" $rc "$out"
 
+# The commit-msg hook strips AI attribution lines and the blank lines they leave.
+HOOK="$HERE/plugins/agentic-code/skills/project-setup/templates/githooks/commit-msg"
+printf 'fix: thing\n\nWhy it changed.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' > msg
+sh "$HOOK" msg; out=$(cat msg); rc=$?
+expect "commit-msg strips the trailer" 0 "Why it changed" $rc "$out"
+if grep -q -i 'anthropic' msg || [ -z "$(tail -n 1 msg)" ]; then failn=$((failn+1)); echo "FAIL: commit-msg left the trailer or a trailing blank line"; cat msg; else pass=$((pass+1)); fi
+printf 'docs: x\n' > msg; sh "$HOOK" msg
+if [ "$(cat msg)" = "docs: x" ]; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: commit-msg changed a clean message"; fi
+
 echo "check.sh tests: $pass passed, $failn failed"
 [ $failn -eq 0 ]
