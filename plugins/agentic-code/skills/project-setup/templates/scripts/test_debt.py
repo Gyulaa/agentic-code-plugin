@@ -37,6 +37,7 @@ TEST_LINE = re.compile(r"^\s*(def test\w*|test\(|it\(|void main|func Test\w*|@Te
 VAGUE = re.compile(r"^(it |that |this |the result |everything )?(should |must |will |needs to |has to )?(just )?"
                    r"(work|works|working|be correct|be right|be ok|be okay|be fine|is correct|is right|is ok|"
                    r"is fine|behave|behaves)( correctly| properly| well| as expected)?\W*$", re.I)
+MARKUP = (".html", ".htm", ".css", ".scss", ".sass", ".less", ".md", ".json", ".yaml", ".yml", ".xml", ".svg", ".txt")
 MIN_CLAIM = 12
 RUN_TIMEOUT = 900
 LOCK = "agentic/revert.lock"
@@ -154,6 +155,12 @@ def read_text(path, limit=1024 * 1024):
 
 def mirror_path(target, mp):
     stem, ext = os.path.splitext(os.path.basename(target))
+    if ext in MARKUP:  # nothing runs a test on markup: use the language the project's tests are written in
+        for path in tracked_tests(mp):
+            test_ext = os.path.splitext(path)[1]
+            if test_ext and not os.path.basename(path).startswith("__init__"):
+                ext = test_ext
+                break
     roots = [g[:-3] for g in (mp["test"] if mp else []) if g.endswith("/**") and "*" not in g[:-3]]
     folders = target.split("/")[1:-1]
     if ext == ".dart":

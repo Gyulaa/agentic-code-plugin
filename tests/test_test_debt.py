@@ -106,6 +106,12 @@ class DebtTest(unittest.TestCase):
         self.assertEqual(self.add()[0], 0)
         self.assertEqual(self.items()[0]["where"]["file"], "tests/test_coupon_flow.py")
 
+    def test_a_markup_target_gets_a_test_file_in_the_projects_test_language(self):
+        self.repo.write("ui/offers.html", "<h1>Offers</h1>\n")
+        code, out, err = self.add("ui-matrix", then="no overflow and 'Empty' shows for 0 offers")
+        self.assertEqual(code, 0, out + err)
+        self.assertEqual(self.items()[0]["where"]["file"], "tests/test_offers.py")
+
     def test_add_names_a_pattern_from_the_same_area(self):
         self.repo.write("shop/coupon.py", NEW)
         self.assertEqual(self.add()[0], 0)
