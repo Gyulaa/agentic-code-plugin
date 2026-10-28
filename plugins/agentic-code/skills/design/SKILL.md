@@ -55,6 +55,7 @@ For a new direction or a redesign, wait for the user's OK. For a component insid
 - **Web:** three widths (about 375, 768 and 1440 px), light and dark if both exist. **Native:** a small and a large device, and the largest text size.
 - **Batch it:** look at everything at once, name the three biggest problems (hierarchy, spacing rhythm, contrast, alignment, generic look, a broken state), fix them together, then look again. At most three rounds; then report what is left. Screenshots are expensive (`working-mode` §6): crop to the area, and check text through the accessibility tree or page text instead.
 - **Pattern scan, on request** or before handing over a large piece: `python3 "${CLAUDE_SKILL_DIR}/scripts/slop_check.py" <files or folders>`. It finds code-level tells (animating everything, gradient text, zoom disabled, a CDN font, inflated copy); it does not judge the design. A line containing `slop-ok` is a deliberate choice and is skipped.
+- **Real data, before handing over:** try the worst case, not the sample (very long names, empty, zero, huge, 200% text): the step and the catalogue are in `design-review` (`${CLAUDE_PLUGIN_ROOT}/skills/design-review/references/worst-case-data.md`).
 - For a large change, finish with `design-review`. A public page that should be found in search also gets `seo`.
 
 ## Never

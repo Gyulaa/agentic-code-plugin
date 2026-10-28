@@ -6,7 +6,7 @@ argument-hint: "[new | existing] [path]"
 
 # Project setup
 
-Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `design`, `design-review`, `seo`, `resume-work`, `save-work`) assume this layout.
+Builds the working environment around the code, not the code itself: instructions for Claude, notes that keep the next session cheap, one command that says "green", a hook that keeps it green, and guard rails. The other skills in this plugin (`working-mode`, `quality-gate`, `git-workflow`, `match-the-codebase`, `privacy-check`, `security-check`, `design`, `design-review`, `seo`, `resume-work`, `save-work`) assume this layout.
 
 Files next to this SKILL.md: `references/interview.md` (questions), `references/audit.md` (existing-project audit), `references/stacks.md` (check commands per stack), `references/code-graph.md` (optional code graph), `templates/` (the files to generate). Read a reference only when you reach the step that needs it.
 
@@ -39,10 +39,12 @@ Files next to this SKILL.md: `references/interview.md` (questions), `references/
    - `scripts/check.sh` from `templates/scripts/check.sh`, configured with the stack's commands from `references/stacks.md`; `chmod +x`.
    - `.githooks/pre-commit` and `.githooks/commit-msg` from `templates/githooks/` (the second strips AI attribution lines from every commit message), and `git config core.hooksPath .githooks` (this is per clone; say it in the README too).
    - `.claude/guard.json` from `templates/claude/guard.json` **only if there is a production system** the agent must not change (a database, a deploy target, a payment account). The plugin's hook enforces it.
+   - `{{SECURITY_LINE}}` in `CLAUDE.md` becomes `, \`security-check\` on security-relevant changes` for any product with accounts, roles, payments, secrets or server endpoints, gate or not; otherwise delete it.
    - `CLAUDE.local.md` from `templates/CLAUDE.local.md`, and `CLAUDE.local.md` added to `.gitignore`.
    - `.claude/settings.json` from `templates/claude/settings.json`: an allowlist for the safe, frequent commands (the check script, read-only git, the test runner), so the user is not clicking through approvals. Never allowlist push, deploy or anything touching production.
    - If the user also uses other coding agents (Codex, Cursor, Gemini CLI): an `AGENTS.md` containing only `See CLAUDE.md.` plus anything tool-specific, so there is one source of truth.
    - Optional, for long unattended runs: a `Stop` hook that runs `scripts/check.sh` and keeps the turn going until it passes (see the Claude Code hooks documentation). Offer it, don't add it by default.
+   - **The risk gate**, only when the user wants it (recommend it for scale M and L, say nothing about it for S): `scripts/risk_level.py` and `scripts/test_debt.py` copied as they are (`chmod +x`), and `scripts/risk-map.json` **written from the project's risky areas (interview question 12) and its real folder layout**, never left empty or with placeholders. Fill `skip` (docs, assets, lock files), `test`, `critical` (a `why` for each; an `anchor` regular expression where only part of a file is risky; `server_twin` where the same logic lives on both sides of a contract), `sensitive`, `normal` (the source paths that exist), `ui`, and `test_one` from `references/stacks.md`. The `.githooks/pre-commit` template runs the gate by itself once `scripts/risk_level.py` exists. After writing the map run `python3 scripts/risk_level.py map-coverage` and extend the map until it lists nothing; then run `python3 scripts/risk_level.py level` on a real or sample diff and show the user what it says. Tell them plainly: a commit that lacks the work its level asks for stops, with the exact command to run; the thresholds are first estimates to adjust after a few weeks. In `CLAUDE.md`, `{{RISK_COMMAND}}` becomes `python3 scripts/risk_level.py level   # test level of the current change; the pre-commit hook runs the gate` (delete the line when there is no gate).
    - Scale M/L: `docs/agent-brief.md` from `templates/agent-brief.md` (the block pasted at the top of every subagent prompt).
    - Scale M/L, or whenever other people read the repo: a README written for a person, not for Claude: what this is, how to start, the daily workflow, where things are, the rules, and a **"What's new"** section at the top (newest first, one dated line each, what changed and what to do differently). `save-work` keeps it current, so someone back from a break reads only that section.
    - Large codebases or several connected repos: offer the code graph from `references/code-graph.md`. Don't add it to small projects.
@@ -63,6 +65,7 @@ After setup, tell the user which skills apply to this project and when:
 - always: `working-mode` (context order, tokens, safety), `git-workflow`;
 - before any code change: `quality-gate` and `match-the-codebase`;
 - if the product handles other people's personal data: `privacy-check`;
+- if it has accounts, roles, payments, secrets or any server endpoint: `security-check` on every security-relevant change;
 - if it has a user interface (web or native): `design` for new screens and redesigns, `design-review` after a large UI change;
 - if it has public pages that should be found in search: `seo`;
 - daily: `/agentic-code:resume-work` and `/agentic-code:save-work`;

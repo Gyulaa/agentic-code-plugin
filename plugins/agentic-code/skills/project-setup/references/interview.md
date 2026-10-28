@@ -16,6 +16,7 @@ Ask in at most two rounds. Offer sensible defaults so the user can answer with o
 9. **Tests:** what level is expected [unit tests for logic, a widget or component test for UI, no end-to-end at first]. Any device or browser matrix (smallest screen, dark mode, large text)?
 10. **Hard rules** the agent must never break (for example "never change the database schema without asking", "never touch the payments code"). These become the non-negotiables in `CLAUDE.md`.
 11. **Style preferences** you already know (formatting, naming, comment density, no em dash in UI text). Unknown is fine: they can be added to `CLAUDE.local.md` later, whenever you correct the agent.
+12. **Risky areas:** what handles money, time or dates, permissions, access rules, writes to stored data, or a server contract (an API the client and server must agree on)? Name the folders or modules. Then offer the risk gate: a pre-commit step that sizes each change from its diff and stops a commit whose tests or checks are missing, in proportion to how big and how dangerous the change is. Recommended for a product or a team (scale M and L); for a personal project (S) only mention it if the user asks. Needs python3.
 
 ## Turning answers into files
 | Answer | Goes to |
@@ -29,3 +30,4 @@ Ask in at most two rounds. Offer sensible defaults so the user can answer with o
 | 9 | `scripts/check.sh` steps; the test matrix line in `CLAUDE.md` |
 | 10 | `CLAUDE.md` "Non-negotiables" |
 | 11 | `CLAUDE.local.md` (personal) or `CLAUDE.md` (if the team agrees) |
+| 12 | `scripts/risk-map.json` (`critical`, `sensitive`, `server_twin`), and whether the risk gate is installed at all; `{{RISK_COMMAND}}` in `CLAUDE.md` |
