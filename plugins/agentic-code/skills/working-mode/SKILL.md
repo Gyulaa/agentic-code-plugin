@@ -18,6 +18,7 @@ If the docs and the code disagree, the code wins: say so, and fix the doc in the
 ## 2. Searching well
 - Search with code names (class, function, field, route), not with a natural-language sentence.
 - "Every occurrence" questions (every caller, every write, every place a field is used), where a miss causes a bug: use two independent methods (for example a graph or index **and** grep) and compare the counts. If they differ, find what the other one missed.
+- If the project keeps shared notes (`scripts/notes.py`), search them before you ask the user a question and before you create a note: `notes.py find --text WORD`, `area NAME`, `code PATH`. If a note already answers it, quote it (and say if it looks older than the code); if two notes disagree with the code, the code wins and the note gets fixed.
 - Dynamic dispatch, dependency injection, string keys and UI copy are invisible to static tools: grep for them.
 
 ## 3. A repeated step becomes a script

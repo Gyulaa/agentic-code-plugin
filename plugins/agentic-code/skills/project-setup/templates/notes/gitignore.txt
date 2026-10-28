@@ -1,0 +1,7 @@
+.notes/
+.notes-me
+local/
+.obsidian/
+.DS_Store
+*.bak-*
+__pycache__/

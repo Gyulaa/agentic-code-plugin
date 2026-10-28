@@ -166,6 +166,19 @@ class CheckTest(Base):
         self.has("summary is 161 characters")
         self.has("area 'nowhere' is not in config.json areas")
 
+    def test_ownerless_and_plain_identifiers_only_warn(self):
+        self.t.write("decisions/w.md", header(title="w", type="decision", status="open", area="billing",
+                                              summary="s") + "\nSee [[STATE]] and B7.\n")
+        notes.cmd_index(self.t.ctx, None)
+        issues = [i for i in self.t.issues() if i["path"] == "decisions/w.md"]
+        self.assertEqual(len(issues), 2)
+        self.assertTrue(all(i["soft"] for i in issues))
+        out = subprocess.run([sys.executable, os.path.join(SCRIPTS, "notes.py"), "check", "notes/decisions/w.md"],
+                             cwd=self.t.git_root, env=dict(os.environ, NOTES_DIR=self.t.root),
+                             stdout=subprocess.PIPE, universal_newlines=True)
+        self.assertIn("WARN  decisions/w.md: no waiting-on", out.stdout)
+        self.assertEqual(out.returncode, 0)
+
     def test_links(self):
         self.t.bug("B1", body="See [[missing-note]] and solves:: [[STATE]] and fixes:: [[STATE]] and B2 here.\n")
         self.has("broken link: [[missing-note]]")
@@ -274,6 +287,10 @@ class CheckTest(Base):
 
 class RedZoneTest(Base):
     dedicated = True
+
+    def test_the_first_commit_of_a_new_notes_repo_may_create_red_files(self):
+        git(self.t.git_root, "add", ".")
+        self.assertFalse([m for m in self.t.msgs(staged=True) if "red zone" in m])
 
     def test_red_file_on_the_default_branch_needs_a_pull_request(self):
         git(self.t.git_root, "add", ".")

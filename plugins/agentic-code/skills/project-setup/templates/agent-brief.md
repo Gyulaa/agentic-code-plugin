@@ -9,6 +9,7 @@ Where things are
 - State (one page, start here): {{ROOT}}/STATE.md
 - Rules: {{ROOT}}/CLAUDE.md — read "Non-negotiables" and "Environments" before any change.
 - Known bugs: {{ROOT}}/docs/bugs.md. Don't report a known bug as new; refer to its ID.
+  (With shared notes: `python3 {{ROOT}}/scripts/notes.py find type=bug status=open,in-progress,pr-open`, and `notes.py find --text WORD` before reporting anything as new. Read-only: do not create or edit notes unless the task says so.)
 - Check: {{ROOT}}/scripts/check.sh (format + lint + tests; "OK" = green).
 
 How to search

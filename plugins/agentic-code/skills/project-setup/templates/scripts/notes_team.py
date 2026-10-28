@@ -216,6 +216,19 @@ def cmd_inbox(ctx, args):
     for stem, status, who in changed:
         print("  decision %s -> %s (%s)" % (stem, status, who))
         news += 1
+    yellow = collections.OrderedDict()
+    names = N.run(ctx.root, ["git", "log"] + rng + ["--format=@%an", "--name-only", "--", "."])[1]
+    author = ""
+    for line in names.splitlines():
+        if line.startswith("@"):
+            author = person_of(ctx, line[1:])
+        elif line and author != me:
+            rel = os.path.relpath(os.path.join(ctx.git_root, line), ctx.root).replace(os.sep, "/")
+            if N.zone_of(ctx, rel) == "yellow":
+                yellow.setdefault(rel, author)
+    for rel, who in yellow.items():
+        print("  changed in the yellow zone: %s (%s)" % (rel, who))
+        news += 1
     if not news:
         print("  nothing new")
     live = [n for n in N.collect(ctx) if not n.archived and not n.error]
@@ -292,7 +305,8 @@ def cmd_tidy(ctx, args):
         "%s [%s, %s; %s; %d days] %s" % (n.stem, n.type_name, n.status, ",".join(N.as_list(n.fm.get("waiting-on"))) or "-",
                                           open_age(n), N.scalar(n.fm.get("title"))[:50]) for n in stale]
     issues, _, _ = N.check(ctx)
-    bad = sorted(set(i["path"] for i in issues if i["path"].endswith(".md") and not i["path"].endswith("_index.md")))
+    bad = sorted(set(i["path"] for i in issues if i["path"].endswith(".md") and not i["path"].endswith("_index.md")
+                     and not i["soft"]))
     baskets["5 header or link errors (scripts/notes.py check)"] = bad
     stuck = []
     skipped = False
@@ -375,7 +389,7 @@ def cmd_save(ctx, args):
                             "scripts/notes.py renumber <id> and save again" % rel)
     present = [f for f in files if os.path.exists(f) and f.startswith(ctx.root + os.sep)]
     issues, _, mode = N.check(ctx, files=present)
-    blocking = [i for i in issues if mode == "block" or i["hard"]]
+    blocking = [i for i in issues if not i["soft"] and (mode == "block" or i["hard"])]
     if blocking:
         for i in blocking:
             print("ERROR %s: %s" % (i["path"], i["msg"]))
@@ -411,7 +425,7 @@ def cmd_save(ctx, args):
         N.run(ctx.git_root, ["git", "commit", "-q", "-m", "refresh generated indexes", "--"] +
               [os.path.join(ctx.root, rel) for rel in stale])
     zones_ok = bool(cfg["zones"].get("green")) and all(
-        N.zone_of(ctx, ctx.rel(f)) == "green" for f in files if f.startswith(ctx.root + os.sep))
+        N.zone_of(ctx, ctx.rel(f)) in ("green", "yellow") for f in files if f.startswith(ctx.root + os.sep))
     if cfg["auto_push"] and ctx.dedicated and zones_ok:
         rc, out, err = N.run(ctx.git_root, ["git", "push", "--quiet"], clean=True, timeout=120)
         if rc != 0:
@@ -421,7 +435,7 @@ def cmd_save(ctx, args):
         print("saved and pushed: %s" % sha)
     else:
         why = "auto_push is off" if not cfg["auto_push"] else (
-            "not a separate notes repo" if not ctx.dedicated else "a file is outside the green zone")
+            "not a separate notes repo" if not ctx.dedicated else "a file is outside the green and yellow zones")
         print("saved, not pushed (%s): %s" % (why, sha))
     return 0
 

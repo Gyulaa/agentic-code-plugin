@@ -327,8 +327,9 @@ def stem_ok(spec, type_name, stem):
 
 # --- check -----------------------------------------------------------------------------------------
 
-def issue(path, msg, hard=False):
-    return {"path": path, "msg": msg, "hard": hard}
+def issue(path, msg, hard=False, soft=False):
+    """hard: never let through; soft: a warning that never stops anything (ownerless, plain-text identifier)."""
+    return {"path": path, "msg": msg, "hard": hard, "soft": soft}
 
 
 def zone_of(ctx, rel):
@@ -384,7 +385,7 @@ def code_exists(ctx, entry):
 
 def check_note(ctx, note, known, people, issues):
     cfg, spec = ctx.cfg, ctx.types()[note.type_name]
-    add = lambda msg, hard=False: issues.append(issue(note.rel, msg, hard))
+    add = lambda msg, hard=False, soft=False: issues.append(issue(note.rel, msg, hard, soft))
     if note.error:
         add(note.error)
         return
@@ -428,7 +429,7 @@ def check_note(ctx, note, known, people, issues):
             elif d not in ("team", "agent") and not person_ok(d):
                 add("decided-by: '%s' is not in config.json people" % d)
         if note.status in spec["open"] and not as_list(fm.get("waiting-on")):
-            add("no waiting-on: whose decision is this waiting for? (ownerless)")
+            add("no waiting-on: whose decision is this waiting for? (ownerless)", soft=True)
         if cfg["categories"]:
             c = scalar(fm.get("category"))
             if c not in cfg["categories"]:
@@ -441,7 +442,7 @@ def check_note(ctx, note, known, people, issues):
         if not as_list(fm.get("to")):
             add("missing header field: to")
         if note.status in spec["open"] and not as_list(fm.get("waiting-on")):
-            add("no waiting-on on an open message")
+            add("no waiting-on on an open message", soft=True)
     links = note.links()
     if len(links) < cfg["min_links"]:
         add("%d wikilink(s), at least %d needed" % (len(links), cfg["min_links"]))
@@ -455,7 +456,7 @@ def check_note(ctx, note, known, people, issues):
         plain = FENCE.sub("", LINK.sub("", note.body))
         ids = sorted(set(re.findall(r"\b(?:%s)\d+\b" % "|".join(map(re.escape, prefixes)), plain)))
         if ids:
-            add("identifier written as plain text, write it as a link: %s" % ", ".join(ids))
+            add("identifier written as plain text, write it as a link: %s" % ", ".join(ids), soft=True)
     for entry in as_list(fm.get("code")):
         if not code_exists(ctx, entry):
             add("code path not found: %s" % entry)
@@ -545,7 +546,8 @@ def check(ctx, files=None, staged=False, warn=False):
         if have != want:
             issues.append(issue(ctx.rel(ip), "index is %s; run scripts/notes.py index" %
                                 ("missing" if have is None else "out of date")))
-    if staged and ctx.dedicated:
+    # the very first commit of a new notes repo creates the scripts and the config, so the zones start after it
+    if staged and ctx.dedicated and git(ctx.git_root, "rev-parse", "--verify", "--quiet", "HEAD"):
         branch = git(ctx.git_root, "branch", "--show-current")
         if branch and branch == default_branch(ctx):
             for p in sorted(targets or []):
@@ -565,7 +567,7 @@ def cmd_check(ctx, args):
     issues, _, mode = check(ctx, args.files, args.staged, args.warn)
     errors = 0
     for i in issues:
-        soft = mode == "warn" and not i["hard"]
+        soft = i["soft"] or (mode == "warn" and not i["hard"])
         print("%s %s: %s" % ("WARN " if soft else "ERROR", i["path"], i["msg"]))
         errors += 0 if soft else 1
     if mode == "warn" and issues and os.environ.get("NOTES_GATE") == "warn":
@@ -808,7 +810,7 @@ def cmd_new(ctx, args):
     me = whoami(ctx) or "me"
     body = "\n# %s\n\n" % args.title
     if args.type == "message":
-        body += "%s · %s -> %s: \n" % (d, me, ", ".join(csv(args.to)))
+        body += "Related: \n\n%s · %s -> %s: \n" % (d, me, ", ".join(csv(args.to)))
     else:
         body += "Related: \n"
     text = "---\n" + "".join("%s: %s\n" % (k, v) for k, v in fm.items()) + "---\n" + body
@@ -958,7 +960,8 @@ def health(ctx, prs=False):
     stale = [n for n in live if n.status in ctx.types()[n.type_name].get("open", [])
              and (days_since(n.fm.get("updated")) or 0) >= stale_days]
     issues, _, _ = check(ctx)
-    failing = len(set(i["path"] for i in issues if i["path"].endswith(".md") and not i["path"].endswith("_index.md")))
+    failing = len(set(i["path"] for i in issues if i["path"].endswith(".md") and not i["path"].endswith("_index.md")
+                      and not i["soft"]))
     msg_ages = sorted(days_since(n.fm.get("updated")) or 0 for n in live
                       if n.type_name == "message" and n.status in ctx.types()["message"]["open"])
     state = os.path.join(ctx.root, ctx.cfg["state"])

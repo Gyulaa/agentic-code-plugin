@@ -237,7 +237,18 @@ class PushPolicyTest(TeamCase):
         a.decision("two")
         notes.cmd_index(a.ctx, None)
         rc, out = a.save("two and config", "decisions/two.md", "config.json", "decisions/_index.md")
-        self.assertIn("outside the green zone", out)
+        self.assertIn("outside the green and yellow zones", out)
+
+
+class YellowZoneTest(TeamCase):
+    config = dict(TEAM_CONFIG, zones={"green": ["decisions/*"], "yellow": ["knowledge/*"]})
+
+    def test_a_yellow_zone_change_by_someone_else_is_pointed_out(self):
+        self.bob.inbox()
+        self.alice.write("knowledge/export.md", "---\ntitle: Export\ntype: knowledge\nstatus: active\narea: export\n"
+                         "summary: How exports work.\ncreated: 2026-10-28\nupdated: 2026-10-28\n---\n\nSee [[STATE]].\n")
+        self.assertEqual(self.alice.save("how exports work", "knowledge/export.md")[0], 0)
+        self.assertIn("changed in the yellow zone: knowledge/export.md (alice)", self.bob.inbox())
 
 
 class InboxTest(TeamCase):
