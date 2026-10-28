@@ -47,3 +47,10 @@ The local branch is yours, the remote is the team's.
 - **Ask first:** `git branch -D` (only for a provably squash-merged branch; show `git cherry -v origin/<default> <branch>` and the PR number first), and any remote deletion.
 - **Never:** the default branch, the checked-out branch, a branch whose commits exist nowhere else, a branch created in this session, another repo the task did not touch.
 - Report every deletion with its name and repo.
+
+## 7. Merging and conflicts
+- **Resolve code conflicts locally, never in the web editor:** `git merge origin/<default>` into your branch, then fix the files in the working tree, where the tests can run.
+- **Read both sides before choosing.** A resolved file is read with the content of both sides in mind; take `ours` or `theirs` for a whole file only with a stated reason (a generated file regenerated, a file one side deleted on purpose).
+- **After every merge, with or without conflicts, run the check, and push only when it is green.** A clean textual merge can still break: a rename in one PR and a new caller of the old name in another merge without a conflict and fail together.
+- **A default branch that does not build is a critical bug.** Put it in the bug list with an `origin:` line (the commits that met), tell the user, and fix it before anything else.
+- **Suggest, do not do:** that the user turn on "branches must be up to date before merging" or a merge queue on the protected branch, so a PR is checked against the branch it lands on. That setting is the user's.
