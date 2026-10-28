@@ -1,5 +1,6 @@
 """Tests for risk_level.py (classification). Run: python3 -m unittest discover -s tests"""
 
+import datetime
 import json
 import os
 import subprocess
@@ -537,6 +538,103 @@ class RiskGateTest(Base):
         res = json.loads(out)
         self.assertEqual(res["gate"], "stopped")
         self.assertIn("MISSING", {t["status"] for t in res["todos"]})
+
+
+class DebtCeilingTest(Base):
+    def item(self, n, area="shop", status="open", days=1, todo="new-test"):
+        created = (datetime.date.today() - datetime.timedelta(days=days)).isoformat()
+        self.repo.write("docs/test-debt/TD-20260101-%04x.json" % n, json.dumps({
+            "id": "TD-20260101-%04x" % n, "todo": todo, "status": status, "created": created,
+            "area": area, "given": "a cart of 200", "when": "a coupon is applied", "then": "the total is 180"}))
+
+    def change(self):
+        self.repo.write("shop/util.py", lines(10).replace("x_3 = 3", "x_3 = 4"))
+
+    def test_five_open_items_make_the_next_change_in_the_area_large(self):
+        for n in range(5):
+            self.item(n)
+        self.repo.commit("debt")
+        self.change()
+        res = self.repo.level()
+        self.assertEqual(res["width"], "large")
+        self.assertTrue(any("5 open test-debt" in r for r in res["reasons"]), res["reasons"])
+        self.assertIn("pay-debt", self.todos(res))
+        self.assertEqual(len(res["debt"]), 5)
+        out = self.repo.run("level")[1]
+        self.assertIn("debt: TD-20260101-", out)
+        self.assertLessEqual(len(out.splitlines()), 22, out)
+
+    def test_four_open_items_are_still_fine(self):
+        for n in range(4):
+            self.item(n)
+        self.repo.commit("debt")
+        self.change()
+        self.assertEqual(self.repo.level()["width"], "small")
+
+    def test_debt_in_another_area_does_not_count(self):
+        for n in range(5):
+            self.item(n, area="ui")
+        self.repo.commit("debt")
+        self.change()
+        self.assertEqual(self.repo.level()["width"], "small")
+
+    def test_the_oldest_item_counts_too(self):
+        self.item(1, days=20)
+        self.repo.commit("debt")
+        self.change()
+        res = self.repo.level()
+        self.assertEqual(res["width"], "large")
+        self.assertTrue(any("oldest" in r for r in res["reasons"]), res["reasons"])
+
+    def test_closed_items_do_not_count(self):
+        for n in range(6):
+            self.item(n, status="closed", days=30)
+        self.repo.commit("debt")
+        self.change()
+        self.assertEqual(self.repo.level()["width"], "small")
+
+    def test_the_ceiling_comes_from_the_map(self):
+        self.repo.write("scripts/risk-map.json", json.dumps(dict(MAP, debt_ceiling={"open": 2, "days": 99})))
+        self.item(1)
+        self.item(2)
+        self.repo.commit("debt")
+        self.change()
+        self.assertEqual(self.repo.level()["width"], "large")
+
+    def test_debt_written_by_this_very_change_does_not_raise_the_level(self):
+        for n in range(4):
+            self.item(n)
+        self.repo.commit("debt")
+        self.change()
+        self.item(9)  # the fifth, new in this change
+        self.repo.git("add", "-A")
+        res = self.repo.level("--staged")
+        self.assertEqual(res["width"], "small")
+
+    def test_closing_an_item_in_the_diff_pays_the_debt(self):
+        for n in range(6):
+            self.item(n)
+        self.repo.commit("debt")
+        self.change()
+        self.item(0, status="closed")
+        self.repo.git("add", "-A")
+        code, out, _ = self.repo.run("gate")
+        self.assertEqual(code, 2, out)
+        self.assertRegex(out, r"todo: pay-debt: done by diff")
+        self.assertRegex(out, r"todo: live-try: MISSING")
+        self.repo.run("done", "live-try", "tried it live; the change works")
+        self.assertEqual(self.repo.run("gate")[0], 0)
+
+    def test_paying_nothing_leaves_pay_debt_missing(self):
+        for n in range(5):
+            self.item(n)
+        self.repo.commit("debt")
+        self.change()
+        self.repo.git("add", "-A")
+        code, out, _ = self.repo.run("gate")
+        self.assertEqual(code, 2)
+        self.assertRegex(out, r"todo: pay-debt: MISSING")
+        self.assertNotIn("test_debt.py add pay-debt", out)
 
 
 if __name__ == "__main__":

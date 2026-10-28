@@ -22,6 +22,7 @@ The work asked is the union of both. Python 3.8+, standard library only.
 
 import argparse
 import ast
+import datetime
 import json
 import os
 import re
@@ -36,9 +37,10 @@ DEPTH_OF = {"skip": None, "test": None, "normal": "normal", "sensitive": "sensit
 DEPTH_RANK = {"normal": 0, "sensitive": 1, "critical": 2}
 MAX_REASONS = 8
 TODO_NAMES = ("new-test", "edge-cases", "revert-proof", "adversarial-review", "contract-test", "server-twin",
-              "security-check", "full-write", "ui-matrix", "live-try")
+              "security-check", "full-write", "ui-matrix", "live-try", "pay-debt")
 DEBTABLE = ("new-test", "ui-matrix", "live-try", "full-write")  # a missing test can be debt, below critical
 DEBT_DIR = "docs/test-debt"
+DEFAULT_CEILING = {"open": 5, "days": 14}
 TEXT_LIMIT = 2 * 1024 * 1024
 
 
@@ -164,7 +166,12 @@ def load_map(root, override=None):
     mp["ui_matrix_marker"] = _regex(marker, "ui_matrix_marker") if isinstance(marker, str) and marker else None
     if data.get("gate", "strict") not in ("strict", "warn"):
         raise Usage("%s: gate must be \"strict\" or \"warn\"" % MAP_FILE)
-    for key in ("debt_ceiling", "gate", "test_one"):
+    ceiling = dict(DEFAULT_CEILING)
+    for key, value in (data.get("debt_ceiling") or {}).items():
+        if key in ceiling and isinstance(value, int) and value >= 1:
+            ceiling[key] = value
+    mp["debt_ceiling"] = ceiling
+    for key in ("gate", "test_one"):
         if key in data:
             mp[key] = data[key]
     return mp
@@ -185,7 +192,7 @@ def parse_patch(text):
     for line in text.split("\n"):
         if line.startswith("diff --git "):
             cur = {"path": None, "old_path": None, "status": "M", "binary": False, "untracked": False,
-                   "added": [], "removed": [], "_a": None, "_b": None, "_hdr": line[len("diff --git "):]}
+                   "added": [], "removed": [], "contexts": [], "_a": None, "_b": None, "_hdr": line[len("diff --git "):]}
             files.append(cur)
             in_hunk = False
             continue
@@ -199,6 +206,9 @@ def parse_patch(text):
             continue
         if line.startswith("@@"):
             in_hunk = True
+            context = line.split("@@")[2].strip() if line.count("@@") >= 2 else ""
+            if context:
+                cur["contexts"].append(context)
         elif line.startswith("new file mode"):
             cur["status"] = "A"
         elif line.startswith("deleted file mode"):
@@ -233,7 +243,7 @@ def untracked_files(paths):
     out = []
     for path in paths:
         rec = {"path": path, "old_path": None, "status": "A", "binary": False, "untracked": True,
-               "added": [], "removed": []}
+               "added": [], "removed": [], "contexts": []}
         try:
             with open(path, "rb") as f:
                 data = f.read(TEXT_LIMIT)
@@ -319,6 +329,35 @@ def classify_file(rec, mp):
     return best
 
 
+def age_days(created):
+    try:
+        return max(0, (datetime.date.today() - datetime.date.fromisoformat(created)).days)
+    except (TypeError, ValueError):
+        return 0
+
+
+def open_debt(files, areas):
+    """Open test-debt items of the changed areas; items this very change adds do not count."""
+    new = set(rec["path"] for rec in files if rec["status"] == "A")
+    found = []
+    try:
+        names = sorted(os.listdir(DEBT_DIR))
+    except OSError:
+        return found
+    for name in names:
+        if not name.endswith(".json") or DEBT_DIR + "/" + name in new:
+            continue
+        try:
+            with open(os.path.join(DEBT_DIR, name), encoding="utf-8") as f:
+                item = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(item, dict) and item.get("status") == "open" and item.get("area") in areas:
+            found.append({"id": item.get("id") or name[:-5], "area": item["area"], "todo": item.get("todo", ""),
+                          "age_days": age_days(item.get("created")), "then": item.get("then", "")})
+    return found
+
+
 def code_lines(rec):
     return sum(1 for l in rec["added"] + rec["removed"] if l.strip())
 
@@ -395,12 +434,24 @@ def analyse(files, mp, branch):
         width = "medium"
     else:
         width = "large"
+    debt = open_debt(files, areas) if mp is not None else []
+    result["debt"] = debt
+    if mp is not None:
+        ceiling = mp["debt_ceiling"]
+        for area in areas:
+            mine = [d for d in debt if d["area"] == area]
+            oldest = max([d["age_days"] for d in mine] or [0])
+            if len(mine) >= ceiling["open"] or (mine and oldest >= ceiling["days"]):
+                width = "large"
+                result["reasons"].append("large: area %s has %d open test-debt items (oldest %d days; the ceiling "
+                                         "is %d items or %d days)" % (area, len(mine), oldest, ceiling["open"],
+                                                                      ceiling["days"]))
     result["width"] = width
-    result["todos"] = todos_for(width, depth, mp, result["files"], twins, contract, has_sensitive)
+    result["todos"] = todos_for(width, depth, mp, result["files"], twins, contract, has_sensitive, debt)
     return result
 
 
-def todos_for(width, depth, mp, files, twins, contract, has_sensitive):
+def todos_for(width, depth, mp, files, twins, contract, has_sensitive, debt):
     todos = []
 
     def add(name, note=""):
@@ -425,6 +476,8 @@ def todos_for(width, depth, mp, files, twins, contract, has_sensitive):
                                                if f["class"] not in ("skip", "test")):
             add("ui-matrix", "states, small screen, large text, both themes")
         add("live-try", "try it once, live")
+        if debt:
+            add("pay-debt", "close an open test-debt item of this area with test_debt.py close")
     return todos
 
 
@@ -446,6 +499,11 @@ def render(result):
             out.append("%s: %s" % (label, item))
         if len(items) > MAX_REASONS:
             out.append("%s: ... and %d more" % (label, len(items) - MAX_REASONS))
+    if result["width"] == "large":
+        for item in result.get("debt", [])[:3]:
+            out.append("debt: %s (%s, %dd) %s" % (item["id"], item["area"], item["age_days"], item["then"][:60]))
+        if len(result.get("debt", [])) > 3:
+            out.append("debt: ... and %d more (test_debt.py list)" % (len(result["debt"]) - 3))
     for todo in result["todos"]:
         if "status" in todo:
             detail = (" (%s)" % todo["detail"]) if todo.get("detail") else ""
@@ -525,8 +583,23 @@ def debt_todos(files):
     return found
 
 
+def closes_debt(files):
+    """The first debt item that the staged change turns from open to closed."""
+    for rec in files:
+        if rec["status"] == "M" and rec["path"].startswith(DEBT_DIR + "/") and rec["path"].endswith(".json"):
+            try:
+                item = json.loads(git("show", ":" + rec["path"])[1])
+            except ValueError:
+                continue
+            if isinstance(item, dict) and item.get("status") == "closed":
+                return rec["path"]
+    return None
+
+
 def todo_status(todo, result, files, mp, attested, debts):
     name = todo["name"]
+    if name == "pay-debt" and closes_debt(files):
+        return "done by diff", closes_debt(files)
     if name == "new-test":
         tests = [f["path"] for f in result["files"] if f["class"] == "test" and f["status"] != "D" and f["added"]]
         if tests:
