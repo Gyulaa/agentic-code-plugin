@@ -1,5 +1,7 @@
 """Tests for notes.py. Run: python3 -m unittest discover -s tests"""
 
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -12,6 +14,9 @@ SCRIPTS = os.path.join(ROOT, "plugins", "agentic-code", "skills", "project-setup
 sys.path.insert(0, SCRIPTS)
 import notes  # noqa: E402
 
+# A running git hook exports GIT_AUTHOR_NAME and friends; they would override the throwaway repos' identities.
+for _key in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_key]
 os.environ["NOTES_TODAY"] = "2026-10-28"
 os.environ.pop("NOTES_GATE", None)
 os.environ.pop("NOTES_ME", None)
@@ -34,6 +39,13 @@ def git(cwd, *args):
     p = subprocess.run(("git",) + args, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                        universal_newlines=True)
     return p.stdout.strip()
+
+
+def silence(case):
+    """Keep the commands' own output out of the test run."""
+    stack = contextlib.ExitStack()
+    stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+    case.addCleanup(stack.close)
 
 
 def header(**fm):
@@ -95,6 +107,7 @@ class Base(unittest.TestCase):
     dedicated = False
 
     def setUp(self):
+        silence(self)
         self.tmp = tempfile.TemporaryDirectory()
         self.t = Tree(self.tmp.name, self.dedicated)
 

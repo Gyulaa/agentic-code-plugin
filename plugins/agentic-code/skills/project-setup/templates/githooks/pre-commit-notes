@@ -1,0 +1,7 @@
+#!/bin/sh
+# For a repo that holds only the notes (no code, so no scripts/check.sh): the notes gate on every commit.
+# Install it as .githooks/pre-commit. Enable once per clone: git config core.hooksPath .githooks
+# Escape hatch: NOTES_GATE=warn lets header errors through (and says so); secrets and personal data never pass.
+ROOT="$(git rev-parse --show-toplevel)"
+command -v python3 >/dev/null 2>&1 || { echo "pre-commit: python3 not found, the notes gate cannot run"; exit 1; }
+python3 "$ROOT/scripts/notes.py" check --staged || exit 1

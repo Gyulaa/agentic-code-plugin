@@ -100,6 +100,24 @@ expect "a passing gate lets the commit through" 0 "gate ran" $rc "$out"
 echo "skipped" >> a.txt && git add a.txt && out=$(STUB_EXIT=2 SKIP_CHECK=1 git commit -q -m skipped 2>&1); rc=$?
 expect "SKIP_CHECK=1 skips the check and the gate" 0 "skipped" $rc "$out"
 if printf '%s' "$out" | grep -q "gate ran"; then failn=$((failn+1)); echo "FAIL: SKIP_CHECK=1 did not skip the gate"; else pass=$((pass+1)); fi
+# The notes gate runs first, only when the project has scripts/notes.py, and SKIP_CHECK=1 does not skip it.
+printf 'import os, sys\nprint("notes ran", sys.argv[1:])\nsys.exit(int(os.environ.get("STUB_NOTES", "0")))\n' > scripts/notes.py
+git add scripts/notes.py && git commit -q --no-verify -m "stub notes"
+echo "n1" >> a.txt && git add a.txt && out=$(STUB_NOTES=1 SKIP_CHECK=1 git commit -q -m "notes stop" 2>&1); rc=$?
+expect "the notes gate stops the commit even with SKIP_CHECK=1" 1 "notes ran \['check', '--staged'\]" $rc "$out"
+if [ "$(git log -1 --format=%s)" = "notes stop" ]; then failn=$((failn+1)); echo "FAIL: the commit went through a stopping notes gate"; else pass=$((pass+1)); fi
+out=$(STUB_NOTES=0 git commit -q -m "notes pass" 2>&1); rc=$?
+expect "a passing notes gate lets the commit through" 0 "notes ran" $rc "$out"
+# The notes-only hook (no check.sh) runs just the gate.
+NOTESREPO="$TMP/notesrepo"
+mkdir "$NOTESREPO" && cd "$NOTESREPO" && git init -q && git config user.email t@example.com && git config user.name t
+mkdir -p scripts .githooks && cp "$HERE/plugins/agentic-code/skills/project-setup/templates/githooks/pre-commit-notes" .githooks/pre-commit
+chmod +x .githooks/pre-commit && git config core.hooksPath .githooks
+cp "$TMP/hookrepo/scripts/notes.py" scripts/notes.py
+echo x > n.md && git add -A && out=$(STUB_NOTES=1 git commit -q -m x 2>&1); rc=$?
+expect "notes-only hook: the gate can stop the commit" 1 "notes ran" $rc "$out"
+out=$(STUB_NOTES=0 git commit -q -m x 2>&1); rc=$?
+expect "notes-only hook: a passing gate lets the commit through" 0 "notes ran" $rc "$out"
 cd "$TMP"
 
 # The commit-msg hook strips AI attribution lines and the blank lines they leave.

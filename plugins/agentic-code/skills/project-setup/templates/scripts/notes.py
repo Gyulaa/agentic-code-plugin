@@ -822,9 +822,10 @@ def cmd_new(ctx, args):
     return 0
 
 
-def cmd_index(ctx, args):
+def write_indexes(ctx):
+    """Rewrite the generated index files that are missing or stale; the relative paths written."""
     notes = collect(ctx)
-    wrote = 0
+    wrote = []
     for t, spec in ctx.types().items():
         if not spec.get("index") or not any(n.type_name == t for n in notes):
             continue
@@ -833,8 +834,14 @@ def cmd_index(ctx, args):
         if have != want:
             with open(ip, "w", encoding="utf-8") as f:
                 f.write(want)
-            print("wrote " + ctx.rel(ip))
-            wrote += 1
+            wrote.append(ctx.rel(ip))
+    return wrote
+
+
+def cmd_index(ctx, args):
+    wrote = write_indexes(ctx)
+    for rel in wrote:
+        print("wrote " + rel)
     if not wrote:
         print("indexes are up to date")
     return 0
