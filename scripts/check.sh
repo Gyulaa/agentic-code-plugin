@@ -55,6 +55,10 @@ if [ ${#specs[@]} -gt 0 ]; then
   fi
 fi
 
+# The file list is collected; from here on the tools run without git's hook environment
+# (GIT_DIR, GIT_INDEX_FILE, ...), or a tool that runs git in another repo would hit this one.
+for v in $(git rev-parse --local-env-vars); do unset "$v"; done
+
 if [ ${#files[@]} -eq 0 ]; then
   echo "== Format: no changed files"
 elif [ $STAGED -eq 1 ] && [ -n "$FORMAT_CHECK" ]; then

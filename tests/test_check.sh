@@ -62,6 +62,26 @@ expect "command with \$@" 0 "Format check" $rc "$out"
 out=$(TEST='' scripts/check.sh 2>&1); rc=$?
 expect "no tests configured" 0 "none configured" $rc "$out"
 
+# Under a real pre-commit hook the project tools must not inherit git's local variables
+# (GIT_DIR, GIT_INDEX_FILE, ...): a test that runs git in another repo would hit this one.
+# The file list is still collected in the hook environment: on "git commit -o" the temporary
+# index named by GIT_INDEX_FILE says which files are part of the commit.
+HOOKTEMPLATE="$HERE/plugins/agentic-code/skills/project-setup/templates/githooks/pre-commit"
+HOOKREPO="$TMP/hookrepo"
+mkdir "$HOOKREPO" && cd "$HOOKREPO" && git init -q && git config user.email t@example.com && git config user.name t
+mkdir -p scripts .git/hooks && cp "$TEMPLATE" scripts/check.sh && chmod +x scripts/check.sh
+cp "$HOOKTEMPLATE" .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+echo one > a.txt && echo one > b.txt && git add -A && git commit -q -m init
+echo two >> a.txt && echo two >> b.txt && git add a.txt
+rm -f "$TMP/seen"
+out=$(EXTS=txt LINT='' FORMAT_FIX='' FORMAT_CHECK='printf "%s\n" "$@" > "'"$TMP"'/seen"' \
+  TEST='for v in $(git rev-parse --local-env-vars); do if env | grep -q "^$v="; then echo "leaked $v"; exit 1; fi; done' \
+  git commit -o b.txt -m partial 2>&1); rc=$?
+expect "partial commit: tools see no git environment" 0 "OK" $rc "$out"
+if [ "$(cat "$TMP/seen" 2>/dev/null)" = "b.txt" ]; then pass=$((pass+1)); else
+  failn=$((failn+1)); echo "FAIL: partial commit: wanted the format check to see only b.txt, got: $(cat "$TMP/seen" 2>/dev/null)"; fi
+cd "$TMP"
+
 # The commit-msg hook strips AI attribution lines and the blank lines they leave.
 HOOK="$HERE/plugins/agentic-code/skills/project-setup/templates/githooks/commit-msg"
 printf 'fix: thing\n\nWhy it changed.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\n' > msg
