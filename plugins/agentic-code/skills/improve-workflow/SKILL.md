@@ -33,4 +33,26 @@ At most five changes, each one in a short table row: the friction, the change, t
 - Remove the Friction lines that the change addresses; add a "measure on" date to the state file's next steps.
 
 ## 5. Follow up
-On the date, compare the number. If the change did not help, revert it; a rule that does not pull its weight is a cost.
+On the date, compare the number. If the change did not help, revert it; a rule that does not pull its weight is a cost. To get the number by experiment rather than by guess, use the next section.
+
+## Measure a change
+Use it when a change claims to save tokens or rounds (a script, a hook, a stricter or looser rule) and the answer is worth about twice the cost of the task itself.
+
+**Say the cost first:** the measurement costs roughly two to three times the task. If the task changes files, ask the user before running it.
+
+**Fix these before anything runs,** and write them in the report:
+1. the task, word for word, as one self-contained prompt that needs no other context;
+2. the starting commit;
+3. the model and the effort, the same on both sides;
+4. the acceptance criterion, stated so that a person can tell pass from fail.
+
+**Set up.** Two fresh subagents: one with the baseline tools, one with the setup under test. Each works in its own sandbox clone (`git clone --local <repo> <scratchpad>/<name>`), never in the live repository, so neither can touch your work or see the other.
+
+**Measure by replay only.** Not in the current session: its loaded context and its cache make the numbers lie. Take the figures from the subagents' completion notices: tokens and tool calls, and for accuracy check the result against the fixed criterion.
+
+**If the difference is under 10%,** run both sides once more (n=2) and compare the means. Say that two runs are a small sample.
+
+| Run | Side | Tokens | Tool calls | Criterion met |
+|---|---|---|---|---|
+
+**Quote a saving as a percentage only from your own table,** never from a source's headline number or a feeling. If accuracy dropped, the saving does not count.

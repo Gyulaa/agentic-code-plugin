@@ -33,17 +33,39 @@ Quality comes first, at the level of a precise professional team: we don't skimp
 ## Definition of done and the stop rule
 Done means: the acceptance criteria are met, the machine check is green, and the diff self-review is clean. After that there is **no "one more small optimisation"**: anything not in the criteria is a new task, and the user decides about it. Optimise performance only after a measured problem.
 
+## Test level
+Decide the level before step 3 from two axes; the work asked is the union of both. The level never loosens the procedure: it puts the extra rounds where the risk is and drops the ones that add nothing, and it is stricter than a flat rule where the risk is high.
+
+| Width (how big) | Work on top of the procedure |
+|---|---|
+| **small**: up to about 50 changed code lines, one area | the check once at the end; the gate asks for no new test (a bug fix still starts with its failing test, step 3) |
+| **medium**: up to about 300 lines, up to two areas | a new or changed test for the changed behaviour |
+| **large**: more than that, a new screen or feature, a release branch, or an area over its test-debt ceiling | the UI matrix for new UI (states, small screen, large text, both themes), one live try, and pay down the area's open test debt |
+
+| Depth (how dangerous) | What | Work |
+|---|---|---|
+| **normal** | everything else | the width's work only |
+| **sensitive** | the data layer, a shared component, any write to stored data, a file nobody classified | the width's work, plus **full-write**: a write lists every field, because a skipped field can erase a stored value |
+| **critical** | money, time and dates, permissions, access rules, a data write path, a server contract (API schema), a migration, a dependency, a legal promise | a new test, edge cases, a **revert proof** (the new test fails on the old code), an adversarial review, a rule or contract test where the project has that layer, the other side of the contract when the logic lives in two places, and the `security-check` skill. **Nothing is written down as debt.** |
+
+When unsure, take the higher level. Do not lower it by how you describe the change.
+
+**With scripts or without.** A project that has `scripts/risk_level.py` gets the level from the diff, not from your description (`risk_level.py level`), and its pre-commit hook stops a commit whose work is missing. Without them, apply the same two tables by hand. Details, what each piece of work means and what counts as proof: `references/test-level.md`.
+
+**Test debt.** A test you cannot write now, below critical depth, is written down (`test_debt.py add`, or the project's own place), with a claim concrete enough for someone who never saw this session. It is closed only with proof. Debt is not a bug: a bug is wrong behaviour, debt is a missing test; keep them in separate lists.
+
 ## Who triggers what
 | Level | What |
 |---|---|
-| **The machine, always** | pre-commit hook (check script), lint rules, CI on pull requests |
-| **Claude, when warranted** | steps 1-9 above; UI and accessibility tests on UI changes; `design` rules for UI work, `design-review` after a large UI change, `seo` on public pages; independent review on large changes |
+| **The machine, always** | pre-commit hook (check script, and the risk gate if the project has one), lint rules, CI on pull requests |
+| **Claude, when warranted** | steps 1-9 above, scaled by the test level; UI and accessibility tests on UI changes; `design` rules for UI work, `design-review` after a large UI change, `seo` on public pages; the `security-check` skill on critical changes; independent review on large changes |
 | **Claude proposes, the user starts** | mutation testing, a coverage report on a larger branch, a security review, a dependency upgrade |
 | **The human** | product decisions, PR review, testing on a real device, priorities, permission to push and open PRs |
 
 ## Known traps
 - A bug in a shared component is fixed in the component, with its own test, in its own commit; don't work around it at the call site.
 - Live (possibly production) data in a simulator, browser or app: look only, no saves or deletes, unless it is a test environment.
+- A change to security-relevant code (access rules, roles, endpoints, payments, secrets) is critical: run `security-check` before the commit, not after.
 - A merge, even a clean one, can break the build (a rename meeting a new caller): run the check after every merge before pushing; see `git-workflow`, "Merging and conflicts".
 
 ## Measuring

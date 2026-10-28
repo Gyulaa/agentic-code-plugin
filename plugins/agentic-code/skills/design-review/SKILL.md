@@ -32,7 +32,13 @@ A review finds what blocks the user and the goal first, and polish last. It shar
 
 **Hand-offs:** a public page that should be found in search: say in one line that `seo` applies. Third-party fonts, embeds or analytics: `privacy-check`.
 
-## 4. Report
+## 4. Worst-case data
+A screen drawn with the designer's tidy sample data hides what real data does to it. For every value the screen shows, put in the realistic worst case from `references/worst-case-data.md`: very long names without spaces, a one-character name, missing and null fields, an empty list, zero, a huge count, an extreme amount or date, accents, emoji, right-to-left text, 200% text size, a narrow width, a slow or offline load.
+- Keep two data sets, the worst case and the empty or missing one, behind a **development-only** switch (compiled out of the release build, never a production setting) and in one test at the narrowest width and the largest text size.
+- Report what broke, with a severity: **data loss** (a value cut off or saved wrong), **broken layout** (overlap, overflow, an unreachable control), **unreadable**, **cosmetic**; and the fix for each.
+- This step does not redesign and does not judge taste: it reports what real data breaks.
+
+## 5. Report
 Ranked, most severe first, at most about ten findings unless the user asks for all:
 | Severity | Meaning |
 |---|---|
@@ -41,5 +47,5 @@ Ranked, most severe first, at most about ten findings unless the user asks for a
 | **Minor** | polish |
 Each finding: where (`file:line`, or the screenshot and the region), what is wrong, why (the rule or the evidence), and the proposed fix. Then **what works and must stay**, and **what could not be checked** (a device not available, a state that could not be reproduced). No style preferences presented as defects.
 
-## 5. Fix only what the user picks
+## 6. Fix only what the user picks
 Apply the chosen fixes with the `design` skill's rules and the project's tokens, then take new screenshots of the changed areas only, and report before and after.

@@ -13,6 +13,19 @@ Values for the configuration block of `scripts/check.sh`. `FORMAT_CHECK` and `FO
 | Rust | `rs` | `rustfmt --check` | `rustfmt` | `cargo clippy -q -- -D warnings` | `cargo test -q` |
 | Static site / other | `html css js` | `npx prettier --check` | `npx prettier --write` | (empty) | (empty) |
 
+## Running one test (`test_one` in `scripts/risk-map.json`)
+Only for the risk gate. `{file}` and `{name}` are filled in and shell-quoted; the command must **fail** when no test matches the name, or a typo would close a test debt.
+
+| Stack | `test_one` |
+|---|---|
+| Python (pytest) | `python3 -m pytest -q {file} -k {name}` (exit 5 when nothing matches) |
+| Python (unittest) | `python3 -m unittest discover -s tests -t . -k {name}` (exit 5 on 3.12+; on older versions nothing matching is a pass) |
+| Node (jest) | `npx jest {file} -t {name}` |
+| Node (vitest) | `npx vitest run {file} -t {name}` |
+| Flutter / Dart | `flutter test {file} --plain-name {name}` |
+| Go | `go test ./... -run {name}` (a name that matches nothing still passes: keep the `close` check that the name is in the file) |
+| Rust | `cargo test {name}` |
+
 Notes:
 - **pnpm / yarn / bun:** replace `npm run` / `npx` accordingly.
 - **Flutter golden (screenshot) tests** differ between macOS and Linux font rendering. If the goldens are made on macOS, set `TEST_ARGS_NOT_MACOS="--exclude-tags golden"` (after tagging the golden tests) so Linux machines skip them, and let macOS CI be their source of truth. Never raise the tolerance instead.

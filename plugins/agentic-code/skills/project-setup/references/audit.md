@@ -30,5 +30,6 @@ Then:
   6. a human-readable README with a "What's new" section, if other people work in the repo;
   7. a code graph (`references/code-graph.md`), only for a large codebase or several connected repos;
   8. for a project with a UI: a `DESIGN.md` derived from the existing theme (the `design` skill), not a new direction;
-  9. optional: a project-local skill for a recurring procedure.
+  9. optional: a project-local skill for a recurring procedure;
+  10. the risk gate (`scripts/risk_level.py`, `scripts/test_debt.py`, a `scripts/risk-map.json` written from the project's risky areas), for a product or a team, only if the user wants it; propose it as its own change, since it makes the pre-commit hook stricter.
 - **Out of scope** unless asked: restructuring source code, upgrading dependencies, rewriting tests.
