@@ -1,0 +1,20 @@
+{
+  "_help": "How risk_level.py classifies a changed file. One class per file, first match wins: skip, critical, test, sensitive, normal, else unknown (treated as sensitive). A glob without a slash matches at any depth; ** crosses directories. Replace every placeholder written in double curly braces; the script refuses a map that still has one. Run: python3 scripts/risk_level.py map-coverage, until it lists nothing.",
+  "skip": ["docs/**", "*.md", "*.lock", "*.png", "*.jpg", "*.svg"],
+  "test": ["{{TEST_GLOB}}"],
+  "critical": [
+    {"glob": "{{CRITICAL_GLOB}}", "why": "{{money, time, access rules, data write path, server contract, migration, dependency or legal promise}}"}
+  ],
+  "sensitive": [
+    {"glob": "{{DATA_LAYER_GLOB}}", "why": "data layer"},
+    {"content": "{{REGEX_FOR_A_WRITE_ON_A_CHANGED_LINE}}", "why": "writes data"}
+  ],
+  "normal": ["{{SOURCE_GLOB}}"],
+  "ui": [],
+  "areas": {"depth": 2},
+  "thresholds": {"small_lines": 50, "medium_lines": 300, "small_areas": 1, "medium_areas": 2},
+  "debt_ceiling": {"open": 5, "days": 14},
+  "gate": "strict",
+  "test_one": "{{COMMAND_THAT_RUNS_ONE_TEST_WITH_{file}_AND_{name}}}",
+  "ui_matrix_marker": ""
+}

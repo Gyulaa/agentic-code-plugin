@@ -1,7 +1,11 @@
 #!/bin/sh
-# Runs the project check on the staged files before every commit.
+# Runs the project check on the staged files before every commit, then the risk gate if the project has one.
 # Enable once per clone: git config core.hooksPath .githooks
-# Documentation-only commits may skip it: SKIP_CHECK=1 git commit ...
+# Documentation-only commits may skip both: SKIP_CHECK=1 git commit ...
 [ "${SKIP_CHECK:-}" = "1" ] && { echo "pre-commit: check skipped (SKIP_CHECK=1)"; exit 0; }
 ROOT="$(git rev-parse --show-toplevel)"
-exec "$ROOT/scripts/check.sh" --staged
+"$ROOT/scripts/check.sh" --staged || exit 1
+if [ -f "$ROOT/scripts/risk_level.py" ]; then
+  command -v python3 >/dev/null 2>&1 || { echo "pre-commit: python3 not found, the risk gate is skipped"; exit 0; }
+  python3 "$ROOT/scripts/risk_level.py" gate || exit 1
+fi

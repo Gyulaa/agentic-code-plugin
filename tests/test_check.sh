@@ -80,6 +80,26 @@ out=$(EXTS=txt LINT='' FORMAT_FIX='' FORMAT_CHECK='printf "%s\n" "$@" > "'"$TMP"
 expect "partial commit: tools see no git environment" 0 "OK" $rc "$out"
 if [ "$(cat "$TMP/seen" 2>/dev/null)" = "b.txt" ]; then pass=$((pass+1)); else
   failn=$((failn+1)); echo "FAIL: partial commit: wanted the format check to see only b.txt, got: $(cat "$TMP/seen" 2>/dev/null)"; fi
+
+# The risk gate runs after the check, only when the project has scripts/risk_level.py;
+# SKIP_CHECK=1 skips both. A stub stands in for the gate here (its own tests are in test_risk_level.py).
+cd "$HOOKREPO"
+commit_change() { # message; changes a.txt and tries to commit it, output in $out, exit code in $rc
+  echo "$1" >> a.txt && git add a.txt && out=$(git commit -q -m "$1" 2>&1); rc=$?
+}
+commit_change "no gate script"
+expect "no risk_level.py: the hook only checks" 0 "OK" $rc "$out"
+if printf '%s' "$out" | grep -q "gate ran"; then failn=$((failn+1)); echo "FAIL: the gate ran without scripts/risk_level.py"; else pass=$((pass+1)); fi
+printf 'import os, sys\nprint("gate ran", sys.argv[1:])\nsys.exit(int(os.environ.get("STUB_EXIT", "0")))\n' > scripts/risk_level.py
+git add scripts/risk_level.py && git commit -q --no-verify -m "stub gate"
+STUB_EXIT=2 commit_change "gate stops"
+expect "the gate can stop the commit" 1 "gate ran \['gate'\]" $rc "$out"
+if [ "$(git log -1 --format=%s)" = "gate stops" ]; then failn=$((failn+1)); echo "FAIL: the commit went through a stopping gate"; else pass=$((pass+1)); fi
+STUB_EXIT=0 commit_change "gate passes"
+expect "a passing gate lets the commit through" 0 "gate ran" $rc "$out"
+echo "skipped" >> a.txt && git add a.txt && out=$(STUB_EXIT=2 SKIP_CHECK=1 git commit -q -m skipped 2>&1); rc=$?
+expect "SKIP_CHECK=1 skips the check and the gate" 0 "skipped" $rc "$out"
+if printf '%s' "$out" | grep -q "gate ran"; then failn=$((failn+1)); echo "FAIL: SKIP_CHECK=1 did not skip the gate"; else pass=$((pass+1)); fi
 cd "$TMP"
 
 # The commit-msg hook strips AI attribution lines and the blank lines they leave.

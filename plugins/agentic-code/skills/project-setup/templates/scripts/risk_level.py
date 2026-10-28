@@ -129,9 +129,12 @@ def load_map(root, override=None):
         return None
     try:
         with open(path, encoding="utf-8") as f:
-            data = json.load(f)
+            raw = f.read()
+        data = json.loads(raw)
     except (OSError, ValueError) as e:
         raise Usage("%s: cannot read (%s)" % (MAP_FILE, e))
+    if "{{" in raw:
+        raise Usage("%s is not configured (a {{placeholder}} is left)" % MAP_FILE)
     if not isinstance(data, dict):
         raise Usage("%s: must be a JSON object" % MAP_FILE)
     mp = {"skip": _str_list(data, "skip"), "test": _str_list(data, "test"),

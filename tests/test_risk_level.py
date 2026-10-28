@@ -3,6 +3,7 @@
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -328,6 +329,29 @@ class RiskLevelTest(Base):
         code, _, err = self.repo.run("level")
         self.assertEqual(code, 1)
         self.assertIn("anchor", err)
+
+    def test_a_map_with_a_placeholder_left_is_refused(self):
+        self.repo.write("scripts/risk-map.json", json.dumps(dict(MAP, test=["{{TEST_GLOB}}"])))
+        code, _, err = self.repo.run("level")
+        self.assertEqual(code, 1)
+        self.assertIn("not configured", err)
+
+    def test_the_shipped_map_template_is_valid_json_with_every_key(self):
+        template = os.path.join(os.path.dirname(SCRIPT), "risk-map.json")
+        with open(template, encoding="utf-8") as f:
+            data = json.load(f)
+        for key in ("skip", "test", "critical", "sensitive", "normal", "ui", "areas", "thresholds",
+                    "debt_ceiling", "gate", "test_one", "ui_matrix_marker"):
+            self.assertIn(key, data)
+
+    def test_the_template_works_once_its_placeholders_are_replaced(self):
+        template = os.path.join(os.path.dirname(SCRIPT), "risk-map.json")
+        with open(template, encoding="utf-8") as f:
+            raw = f.read()
+        self.assertIn("{{", raw)
+        self.repo.write("scripts/risk-map.json", re.sub(r"\{\{.*?\}\}", "x", raw))
+        code, _, err = self.repo.run("level")
+        self.assertEqual(code, 0, err)
 
     def test_map_coverage(self):
         code, out, _ = self.repo.run("map-coverage")
