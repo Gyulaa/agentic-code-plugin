@@ -1,9 +1,19 @@
 #!/bin/sh
-# Runs the project check on the staged files before every commit, then the risk gate if the project has one.
+# Before every commit: the notes gate (if the project keeps notes), the project check on the staged files,
+# then the risk gate (if the project has one).
 # Enable once per clone: git config core.hooksPath .githooks
-# Documentation-only commits may skip both: SKIP_CHECK=1 git commit ...
-[ "${SKIP_CHECK:-}" = "1" ] && { echo "pre-commit: check skipped (SKIP_CHECK=1)"; exit 0; }
+# Documentation-only commits may skip the check and the risk gate: SKIP_CHECK=1 git commit ...
+# The notes gate is not skipped by SKIP_CHECK, because it guards secrets and personal data. Its escape hatch is
+# NOTES_GATE=warn, which only lets header errors through and says so.
 ROOT="$(git rev-parse --show-toplevel)"
+if [ -f "$ROOT/scripts/notes.py" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 "$ROOT/scripts/notes.py" check --staged || exit 1
+  else
+    echo "pre-commit: python3 not found, the notes gate is skipped"
+  fi
+fi
+[ "${SKIP_CHECK:-}" = "1" ] && { echo "pre-commit: check skipped (SKIP_CHECK=1)"; exit 0; }
 "$ROOT/scripts/check.sh" --staged || exit 1
 if [ -f "$ROOT/scripts/risk_level.py" ]; then
   command -v python3 >/dev/null 2>&1 || { echo "pre-commit: python3 not found, the risk gate is skipped"; exit 0; }

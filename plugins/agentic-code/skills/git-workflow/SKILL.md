@@ -31,6 +31,12 @@ Keep a change in one repo. If it truly needs two (typically because the contract
 - update the contract documentation in the same piece of work;
 - tell the user the two PRs **must be merged together**, otherwise the two sides run different contracts.
 
+## 4/b. Shared notes
+A project with shared notes (`notes/config.json`) saves them by its own rules, in this order of preference:
+- **Notes inside a code repo (tier L1):** the notes go with the change on the same branch and PR; never a commit on the default branch.
+- **A separate notes repo (tier L2):** `notes_team.py save` commits only the files you name and pulls with rebase. It pushes **only** if `auto_push` is true in the repo's `config.json`: that is a standing permission the user gave once, on purpose, during setup, and it covers only the green zone (decisions, bugs, tasks, messages) and the yellow zone (knowledge notes, which the digest points out to the others). Anything in the red zone (the scripts, the hook, `config.json`, the folder structure) and any branch other than the notes repo's default needs a pull request and a separate yes, like any other push.
+- On a conflict the script stops: say so, and let the people involved resolve it. Never settle it by guessing or by taking one side.
+
 ## 5. Keeping the docs true
 In the same commit as the code:
 | If this changed | Update |

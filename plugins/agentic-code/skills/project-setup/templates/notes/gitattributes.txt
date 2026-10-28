@@ -1,0 +1,4 @@
+# the text in this repo always has LF line ends
+* text=auto eol=lf
+# message threads are append-only: lines written at the same time are all kept
+messages/*.md merge=union

@@ -1,0 +1,16 @@
+{
+  "_help": "The team's notes configuration. project-setup fills it from the interview; edit it by hand later. Field names in notes are fixed, the values (types, statuses, severity, categories, areas, people) come from here. Unlisted keys use scripts/notes.py defaults.",
+  "state": "STATE.md",
+  "people": {},
+  "areas": {},
+  "categories": [],
+  "repos": [],
+  "gate": "block",
+  "sessions": false,
+  "auto_push": false,
+  "save_branches": [],
+  "zones": {},
+  "min_links": 1,
+  "stale_days": 30,
+  "privacy": {"allowed_email_domains": [], "local_dirs": ["local"]}
+}

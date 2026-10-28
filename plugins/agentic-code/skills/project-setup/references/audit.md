@@ -14,6 +14,7 @@ Goal: a reliable picture in a few thousand tokens. Read manifests, configuration
 9. **Production exposure:** config that points at production by default (a default project, a `.env.local` with live URLs). This decides whether a guard is needed.
 10. **User interface:** is there a `DESIGN.md`, a theme or token file (CSS custom properties, a Tailwind theme, `ThemeData`), or colour literals scattered through components? Are there public pages that should be found in search (decides `seo`)?
 11. **Cross-platform:** case-sensitive file references (macOS and Windows hide them, Linux fails), line endings, scripts using macOS-only or GNU-only flags, hard-coded absolute paths.
+12. **Notes:** how long are `docs/decisions.md` and `docs/bugs.md` (`wc -l`), is there a `notes/` folder, how many items are old, ownerless or stale? If `scripts/notes.py` exists, run `python3 scripts/notes.py health`. A log longer than about 40 entries, or several people or agents writing to it, is the sign to propose the notes tiers (L1, L2 in SKILL.md) and `notes_team.py migrate` as a dry run.
 
 ## Report format
 | Area | Now | Risk | Proposal | Effort |
@@ -31,5 +32,6 @@ Then:
   7. a code graph (`references/code-graph.md`), only for a large codebase or several connected repos;
   8. for a project with a UI: a `DESIGN.md` derived from the existing theme (the `design` skill), not a new direction;
   9. optional: a project-local skill for a recurring procedure;
+  11. shared notes (tier L1 or L2): the `notes/` tree, `scripts/notes.py` (and `notes_team.py` for L2), the hook, `config.json` written from the interview; start with `notes_team.py migrate` as a dry run, only if the log is long or several people write to it, as its own change;
   10. the risk gate (`scripts/risk_level.py`, `scripts/test_debt.py`, a `scripts/risk-map.json` written from the project's risky areas), for a product or a team, only if the user wants it; propose it as its own change, since it makes the pre-commit hook stricter.
 - **Out of scope** unless asked: restructuring source code, upgrading dependencies, rewriting tests.
