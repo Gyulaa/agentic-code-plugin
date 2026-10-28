@@ -3,7 +3,7 @@
   "skip": ["docs/**", "*.md", "*.lock", "*.png", "*.jpg", "*.svg"],
   "test": ["{{TEST_GLOB}}"],
   "critical": [
-    {"glob": "{{CRITICAL_GLOB}}", "why": "{{money, time, access rules, data write path, server contract, migration, dependency or legal promise}}"}
+    {"glob": "{{CRITICAL_GLOB}}", "contract": false, "why": "{{money, time, access rules, data write path, server contract, migration, dependency or legal promise}}"}
   ],
   "sensitive": [
     {"glob": "{{DATA_LAYER_GLOB}}", "why": "data layer"},

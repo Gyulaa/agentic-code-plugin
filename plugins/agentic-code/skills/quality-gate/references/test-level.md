@@ -18,7 +18,7 @@ The change's depth is the highest of its files; its width comes from the size an
 | `edge-cases` | unit tests of the edges: 0, negative, midnight, rounding, empty input, very large input | the cases are in the tests; say which |
 | `revert-proof` | put the changed code back as it was; the new test must fail there. A test that is green on the old code does not protect the change | what you ran and that it failed |
 | `adversarial-review` | a fresh, read-only subagent sees the diff and the acceptance criteria, not your reasoning, and looks for correctness gaps | its findings and what you did with them |
-| `contract-test` | a rule or contract test for the changed rule, where the project has such a layer (access rules against an emulator, an API schema test) | the test, or why the project has no such layer |
+| `contract-test` | a rule or contract test for the changed rule, where the project has such a layer (access rules against an emulator, an API schema test); mark such entries `"contract": true` in the risk map | the test, or why the project has no such layer |
 | `server-twin` | the same logic lives on the other side of a contract (client and server): change both, or say which PR carries the other half | the other change or its PR |
 | `security-check` | run the `security-check` skill on the diff | its report |
 | `full-write` | every write lists the whole field set; a missing field is not written as empty or removed | the write sites you checked |
