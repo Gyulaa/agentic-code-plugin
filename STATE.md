@@ -1,24 +1,24 @@
 # Állapot
 
-Frissítve: 2026-10-25. Egy oldal maradjon: a `/agentic-code:save-work` írja át, a `/agentic-code:resume-work` olvassa először.
+Frissítve: 2026-10-28. Egy oldal maradjon: a `/agentic-code:save-work` írja át, a `/agentic-code:resume-work` olvassa először.
 
 ## Mi ez
 Az `agentic-code` Claude Code plugin forrása (skillek, guard hook, `project-setup` sablonok).
 
 ## Most
-- 0.4.0 kész a `feat/design-skills` ágon, pusholva, PR még nincs: `design`, `design-review` és `seo` skill, `slop_check.py` és `seo_check.py` (kérésre), a `project-setup`, `quality-gate`, `privacy-check` és `match-the-codebase` igazítva. Spec: `docs/specs/2026-10-25-design-and-seo-skills.md`.
-- A kutatás helyben, a gitben nincs: `research/design-skills-research.md`, `research/copy-research.md`, `research/seo-research.md`.
-- A plugin MIT-licences (`LICENSE`, „Copyright (c) 2026 Gyula Miklós”); a validátor már csak az ikon hiányát jelzi.
+- A 0.4.0 (`design`, `design-review`, `seo`, MIT-licenc) a `main`-en van, a PR #3 beolvadt.
+- Spec kész, jóváhagyásra vár: `docs/specs/2026-10-28-testing-security-and-workflow-0.5.md`: 0.4.1 (a hook-környezet javítása, az ütközésfeloldás szabálya) és 0.5.0 (dinamikus tesztszint és tesztadósság szkriptekkel, `security-check`, `save-work` döntés-próba, legrosszabb eset adat a `design-review`-ban, mérés az `improve-workflow`-ban).
+- A kutatás helyben, a gitben nincs: `research/` (`workflow-learnings-research.md` az új, a többi a design, szöveg és seo).
 
 ## Nyitott ágak és PR-ek
-- `feat/design-skills` (pusholva; PR Gyula engedélyére).
+- Nincs.
 
 ## Blokkol / várunk rá
-- PR nyitása Gyula engedélyére, utána a merge az övé.
+- Gyula átnézi a specet; push és PR csak külön engedélyre.
 
 ## Következő lépés
-1. PR a `feat/design-skills` ágról, merge után `/plugin marketplace update agentic-code-plugin`.
-2. Kipróbálás egy valódi projekten: egy landing oldal és egy Flutter-képernyő a `design` skillel, utána `design-review` és `seo`; a tapasztalat a Súrlódás listába.
+1. Spec átnézése; `/clear`, majd „implement `docs/specs/2026-10-28-testing-security-and-workflow-0.5.md` task by task”, a 0.4.1-gyel (1-3. feladat) kezdve.
+2. Kiadás után `/plugin marketplace update agentic-code-plugin`; kipróbálás egy valódi projekten (landing oldal, mobilképernyő, a kapu és az adósság).
 
 ## Súrlódás
 - (még nincs; soronként egy: mi volt lassú vagy hibázott ismételten, milyen gyakran)
