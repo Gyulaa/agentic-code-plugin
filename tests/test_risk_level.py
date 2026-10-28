@@ -73,7 +73,7 @@ class Repo:
         return json.loads(out)
 
 
-class RiskLevelTest(unittest.TestCase):
+class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.repo = Repo(self.tmp.name)
@@ -98,6 +98,8 @@ class RiskLevelTest(unittest.TestCase):
     def todos(self, result):
         return [t["name"] for t in result["todos"]]
 
+
+class RiskLevelTest(Base):
     def test_docs_only_is_none(self):
         self.repo.write("README.md", "# shop\nmore\n")
         self.repo.write("docs/guide.md", "guide\nmore\n")
@@ -341,6 +343,200 @@ class RiskLevelTest(unittest.TestCase):
     def test_unknown_command_is_a_usage_error(self):
         code, _, _ = self.repo.run("nope")
         self.assertEqual(code, 1)
+
+
+class RiskGateTest(Base):
+    def stage(self):
+        self.repo.git("add", "-A")
+
+    def gate(self, *args, **env):
+        saved = dict(self.repo.env)
+        self.repo.env.update(env)
+        try:
+            return self.repo.run("gate", *args)
+        finally:
+            self.repo.env = saved
+
+    def done(self, name, text="did it by hand; the result was as expected"):
+        code, out, err = self.repo.run("done", name, text)
+        self.assertEqual(code, 0, out + err)
+
+    def critical_change(self):
+        self.repo.write("shop/pricing.py", "price = 11\n")
+        self.stage()
+
+    def debt_file(self, todo, name="TD-20261028-ab12.json"):
+        self.repo.write("docs/test-debt/" + name, json.dumps({"id": name[:-5], "todo": todo}))
+
+    def test_docs_only_commit_is_skipped(self):
+        self.repo.write("README.md", "# shop\nmore\n")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0)
+        self.assertIn("skip", out)
+
+    def test_nothing_staged_is_skipped(self):
+        self.repo.write("shop/pricing.py", "price = 11\n")  # not staged
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0)
+        self.assertIn("nothing", out)
+
+    def test_merge_commit_is_skipped(self):
+        self.repo.git("switch", "-q", "-c", "feature")
+        self.repo.write("shop/pricing.py", "price = 11\n")
+        self.repo.commit("price")
+        self.repo.git("switch", "-q", "main")
+        self.repo.write("shop/util.py", lines(10).replace("x_3 = 3", "x_3 = 4"))
+        self.repo.commit("util")
+        self.repo.git("merge", "-q", "--no-commit", "--no-ff", "feature")
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0, out)
+        self.assertIn("merge", out)
+
+    def test_small_normal_passes(self):
+        self.repo.write("shop/util.py", lines(10).replace("x_3 = 3", "x_3 = 4"))
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0, out)
+        self.assertIn("LEVEL: small x normal", out)
+
+    def test_critical_change_without_work_stops_with_the_exact_commands(self):
+        self.critical_change()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 2, out)
+        for name in ("new-test", "edge-cases", "revert-proof"):
+            self.assertRegex(out, r"todo: %s: MISSING" % name)
+        self.assertIn('scripts/risk_level.py done new-test "', out)
+        self.assertLessEqual(len(out.splitlines()), 24, out)
+
+    def test_a_test_in_the_diff_proves_new_test(self):
+        self.critical_change()
+        self.repo.write("tests/test_pricing.py", "def test_price(): assert 1\n")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 2)
+        self.assertRegex(out, r"todo: new-test: done by diff")
+        self.assertRegex(out, r"todo: edge-cases: MISSING")
+
+    def test_attested_todos_let_the_commit_through(self):
+        self.critical_change()
+        self.repo.write("tests/test_pricing.py", "def test_price(): assert 1\n")
+        self.stage()
+        for name in ("edge-cases", "revert-proof", "adversarial-review", "security-check"):
+            self.done(name)
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"todo: edge-cases: attested")
+
+    def test_an_attestation_expires_with_the_next_commit(self):
+        self.critical_change()
+        for name in ("new-test", "edge-cases", "revert-proof", "adversarial-review", "security-check"):
+            self.done(name)
+        self.assertEqual(self.gate()[0], 0)
+        self.repo.git("commit", "-q", "-m", "price")
+        self.repo.write("shop/pricing.py", "price = 12\n")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 2, out)
+        self.assertRegex(out, r"todo: new-test: MISSING")
+
+    def test_done_rejects_unknown_todos_and_vague_text(self):
+        code, _, err = self.repo.run("done", "tidy-up", "did the tidy-up carefully")
+        self.assertEqual(code, 1)
+        self.assertIn("tidy-up", err)
+        code, _, err = self.repo.run("done", "live-try", "ok")
+        self.assertEqual(code, 1)
+        self.assertIn("what you did", err)
+
+    def test_debt_covers_a_missing_test_below_critical(self):
+        self.repo.write("shop/big.py", lines(60))
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 2, out)
+        self.assertIn("test_debt.py add new-test", out)
+        self.debt_file("new-test")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0, out)
+        self.assertRegex(out, r"todo: new-test: debt")
+
+    def test_debt_does_not_cover_a_todo_it_was_not_written_for(self):
+        self.repo.write("shop/big.py", lines(60))
+        self.debt_file("live-try")
+        self.stage()
+        self.assertEqual(self.gate()[0], 2)
+
+    def test_debt_is_never_accepted_at_critical_depth(self):
+        self.critical_change()
+        self.debt_file("new-test")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 2)
+        self.assertRegex(out, r"todo: new-test: MISSING")
+        self.assertNotIn("test_debt.py add new-test", out)
+
+    def test_ui_matrix_marker_in_the_diff_proves_the_matrix(self):
+        mp = dict(MAP, ui_matrix_marker="MATRIX-TESTED")
+        self.repo.write("scripts/risk-map.json", json.dumps(mp))
+        self.repo.commit("marker")
+        self.repo.write("ui/screen.html", "<p>new</p>\n")
+        self.repo.write("tests/test_screen.py", "# MATRIX-TESTED\ndef test_screen(): pass\n")
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertRegex(out, r"todo: ui-matrix: done by diff")
+        self.assertRegex(out, r"todo: live-try: MISSING")
+        self.assertEqual(code, 2)
+
+    def test_warn_mode_reports_but_does_not_stop(self):
+        self.critical_change()
+        code, out, _ = self.gate(RISK_GATE="warn")
+        self.assertEqual(code, 0)
+        self.assertRegex(out, r"todo: new-test: MISSING")
+        self.assertIn("warn", out)
+
+    def test_map_can_set_warn_mode_and_the_environment_overrides_it(self):
+        self.repo.write("scripts/risk-map.json", json.dumps(dict(MAP, gate="warn")))
+        self.repo.commit("warn")
+        self.critical_change()
+        self.assertEqual(self.gate()[0], 0)
+        self.assertEqual(self.gate(RISK_GATE="strict")[0], 2)
+
+    def test_deleting_a_test_is_flagged(self):
+        os.remove(os.path.join(self.repo.dir, "tests/test_util.py"))
+        self.repo.write("shop/util.py", lines(10).replace("x_3 = 3", "x_3 = 4"))
+        self.stage()
+        code, out, _ = self.gate()
+        self.assertEqual(code, 0)
+        self.assertIn("deleted or weakened a test", out)
+
+    def test_fewer_test_lines_are_flagged_more_are_not(self):
+        self.repo.write("tests/test_util.py", "def test(): pass\ndef test2(): pass\n")
+        self.repo.commit("two tests")
+        self.repo.write("tests/test_util.py", "def test(): pass\n")
+        self.stage()
+        self.assertIn("deleted or weakened a test", self.gate()[1])
+        self.repo.write("tests/test_util.py", "def test(): pass\ndef test2(): pass\ndef test3(): pass\n")
+        self.stage()
+        self.assertNotIn("weakened", self.gate()[1])
+
+    def test_without_a_map_the_gate_never_stops(self):
+        with tempfile.TemporaryDirectory() as d:
+            repo = Repo(d, with_map=False)
+            repo.write("a.py", lines(10))
+            repo.commit("base")
+            repo.write("a.py", lines(60))
+            repo.git("add", "-A")
+            code, out, _ = repo.run("gate")
+            self.assertEqual(code, 0, out)
+            self.assertIn("no risk map", out)
+
+    def test_json_output(self):
+        self.critical_change()
+        code, out, _ = self.repo.run("gate", "--json")
+        self.assertEqual(code, 2)
+        res = json.loads(out)
+        self.assertEqual(res["gate"], "stopped")
+        self.assertIn("MISSING", {t["status"] for t in res["todos"]})
 
 
 if __name__ == "__main__":

@@ -3,12 +3,18 @@
 
 Usage:
   scripts/risk_level.py level [--staged | --base REF] [--json] [--map FILE]
+  scripts/risk_level.py gate [--json] [--map FILE]
+  scripts/risk_level.py done <todo> "<what you did, what came out>"
   scripts/risk_level.py map-coverage [--json] [--map FILE]
 
 `level` classifies the change (the working tree against HEAD plus untracked files; --staged: the
 index; --base REF: the working tree against REF) from the diff, never from a description of it.
 The rules live in scripts/risk-map.json. Exit codes: 0 done, 2 `map-coverage` found files the map
-does not know, 1 bad usage or a bad map.
+does not know or `gate` stopped the commit, 1 bad usage or a bad map.
+
+`gate` (the pre-commit hook runs it) judges the staged change. For every todo there are three ways
+out and no fourth: the diff proves it, `done` attests it for this one commit (it expires when HEAD
+moves), or it is written down as test debt, which the level allows below critical depth.
 
 Width (how big): small, medium or large. Depth (how dangerous): normal, sensitive or critical.
 The work asked is the union of both. Python 3.8+, standard library only.
@@ -29,6 +35,10 @@ DEPTH_OF = {"skip": None, "test": None, "normal": "normal", "sensitive": "sensit
             "unknown": "sensitive", "critical": "critical"}
 DEPTH_RANK = {"normal": 0, "sensitive": 1, "critical": 2}
 MAX_REASONS = 8
+TODO_NAMES = ("new-test", "edge-cases", "revert-proof", "adversarial-review", "contract-test", "server-twin",
+              "security-check", "full-write", "ui-matrix", "live-try")
+DEBTABLE = ("new-test", "ui-matrix", "live-try", "full-write")  # a missing test can be debt, below critical
+DEBT_DIR = "docs/test-debt"
 TEXT_LIMIT = 2 * 1024 * 1024
 
 
@@ -150,7 +160,11 @@ def load_map(root, override=None):
         if key in th and isinstance(value, int) and value >= 0:
             th[key] = value
     mp["thresholds"] = th
-    for key in ("debt_ceiling", "gate", "test_one", "ui_matrix_marker"):
+    marker = data.get("ui_matrix_marker")
+    mp["ui_matrix_marker"] = _regex(marker, "ui_matrix_marker") if isinstance(marker, str) and marker else None
+    if data.get("gate", "strict") not in ("strict", "warn"):
+        raise Usage("%s: gate must be \"strict\" or \"warn\"" % MAP_FILE)
+    for key in ("debt_ceiling", "gate", "test_one"):
         if key in data:
             mp[key] = data[key]
     return mp
@@ -313,6 +327,7 @@ def analyse(files, mp, branch):
     thresholds = (mp or {"thresholds": DEFAULT_THRESHOLDS})["thresholds"]
     result = {"map": mp is not None, "files": [], "warnings": [], "reasons": [], "todos": []}
     lines, areas, twins, contract, new_ui = 0, [], [], False, []
+    test_net, test_deleted, has_sensitive = 0, False, False
     for rec in sorted(files, key=lambda r: r["path"]):
         if mp is None:
             cls, why, entry = "unmapped", "", None
@@ -322,6 +337,9 @@ def analyse(files, mp, branch):
         result["files"].append({"path": rec["path"], "old_path": rec["old_path"], "status": rec["status"],
                                 "class": cls, "lines": n, "why": why, "added": len(rec["added"]),
                                 "removed": len(rec["removed"])})
+        if cls == "test":
+            test_net += sum(1 for l in rec["added"] if l.strip()) - sum(1 for l in rec["removed"] if l.strip())
+            test_deleted = test_deleted or rec["status"] == "D"
         if cls in ("skip", "test"):
             continue
         lines += n
@@ -337,10 +355,15 @@ def analyse(files, mp, branch):
             contract = contract or entry["contract"]
         elif cls == "sensitive":
             result["reasons"].append("sensitive: %s (%s)" % (rec["path"], why))
+            has_sensitive = True
         elif cls == "unknown":
             result["warnings"].append("unknown: %s (%s)" % (rec["path"], why))
+            has_sensitive = True
     areas.sort()
     result["lines"], result["areas"] = lines, areas
+    if test_deleted or test_net < 0:
+        result["warnings"].append("you deleted or weakened a test: a failing test is a requirement, "
+                                  "not an obstacle")
 
     counted = [f for f in result["files"] if f["class"] not in ("skip", "test")]
     if not result["files"] or (mp is not None and not counted and
@@ -373,11 +396,11 @@ def analyse(files, mp, branch):
     else:
         width = "large"
     result["width"] = width
-    result["todos"] = todos_for(width, depth, mp, result["files"], twins, contract)
+    result["todos"] = todos_for(width, depth, mp, result["files"], twins, contract, has_sensitive)
     return result
 
 
-def todos_for(width, depth, mp, files, twins, contract):
+def todos_for(width, depth, mp, files, twins, contract, has_sensitive):
     todos = []
 
     def add(name, note=""):
@@ -393,7 +416,7 @@ def todos_for(width, depth, mp, files, twins, contract):
         for twin in twins:
             add("server-twin", twin)
         add("security-check", "run the security-check skill")
-    if depth in ("sensitive", "critical") and mp is not None:
+    if has_sensitive:
         add("full-write", "a write must list every field; a skipped field can erase a stored value")
     if width == "medium" and not any(t["name"] == "new-test" for t in todos):
         add("new-test", "a new or changed test for the changed behaviour")
@@ -424,7 +447,12 @@ def render(result):
         if len(items) > MAX_REASONS:
             out.append("%s: ... and %d more" % (label, len(items) - MAX_REASONS))
     for todo in result["todos"]:
-        out.append("todo: %s%s" % (todo["name"], " - " + todo["note"] if todo["note"] else ""))
+        if "status" in todo:
+            detail = (" (%s)" % todo["detail"]) if todo.get("detail") else ""
+            note = (" - " + todo["note"]) if todo["status"] == "MISSING" and todo["note"] else ""
+            out.append("todo: %s: %s%s%s" % (todo["name"], todo["status"], detail, note))
+        else:
+            out.append("todo: %s%s" % (todo["name"], " - " + todo["note"] if todo["note"] else ""))
     return "\n".join(out)
 
 
@@ -441,6 +469,134 @@ def cmd_level(args):
     else:
         print(render(result))
     return 0
+
+
+def git_path(root, name):
+    path = git("rev-parse", "--git-path", name)[1].strip()
+    return path if os.path.isabs(path) else os.path.join(root, path)
+
+
+def head_id():
+    code, out, _ = git("rev-parse", "--verify", "--quiet", "HEAD")
+    return out.strip() if code == 0 else "root"
+
+
+def load_attested(root):
+    """What was attested for the commit that is about to be made; empty once HEAD has moved."""
+    try:
+        with open(git_path(root, "agentic/risk-attest.json"), encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict) or data.get("head") != head_id() or not isinstance(data.get("items"), dict):
+        return {}
+    return data["items"]
+
+
+def cmd_done(args):
+    root = repo_root()
+    if args.todo not in TODO_NAMES:
+        raise Usage("unknown todo: %s (known: %s)" % (args.todo, ", ".join(TODO_NAMES)))
+    if len(args.text.strip()) < 12:
+        raise Usage("say what you did and what came out (at least 12 characters)")
+    items = load_attested(root)
+    items[args.todo] = args.text.strip()
+    path = git_path(root, "agentic/risk-attest.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"head": head_id(), "items": items}, f)
+    os.replace(tmp, path)
+    print("recorded: %s, for the next commit only" % args.todo)
+    return 0
+
+
+def debt_todos(files):
+    """The todos that the change itself writes down as new test debt."""
+    found = set()
+    for rec in files:
+        if rec["status"] == "A" and rec["path"].startswith(DEBT_DIR + "/") and rec["path"].endswith(".json"):
+            try:
+                item = json.loads("\n".join(rec["added"]))
+            except ValueError:
+                continue
+            if isinstance(item, dict) and isinstance(item.get("todo"), str):
+                found.add(item["todo"])
+    return found
+
+
+def todo_status(todo, result, files, mp, attested, debts):
+    name = todo["name"]
+    if name == "new-test":
+        tests = [f["path"] for f in result["files"] if f["class"] == "test" and f["status"] != "D" and f["added"]]
+        if tests:
+            return "done by diff", tests[0]
+    if name == "ui-matrix" and mp["ui_matrix_marker"] is not None:
+        if any(mp["ui_matrix_marker"].search(l) for rec in files for l in rec["added"]):
+            return "done by diff", "marker in the diff"
+    if name in attested:
+        return "attested", ""
+    if name in DEBTABLE and result["depth"] != "critical" and name in debts:
+        return "debt", ""
+    return "MISSING", ""
+
+
+def cmd_gate(args):
+    root = repo_root()
+    os.chdir(root)
+    mp = load_map(root, args.map)
+
+    def finish(result, status, message, code):
+        result["gate"] = status
+        if args.json:
+            print(json.dumps(result, indent=2))
+        else:
+            if "files" in result and result["width"] != "none":
+                print(render(result))
+            print("gate: " + message)
+        return code
+
+    if os.path.exists(git_path(root, "MERGE_HEAD")):
+        return finish({"width": "none"}, "skipped", "merge commit, skipped (run the check after a merge)", 0)
+    files = gather("staged", None)
+    result = analyse(files, mp, current_branch())
+    if result["width"] == "none":
+        why = "nothing staged" if not files else "only skip-class files"
+        return finish(result, "skipped", why + ", skipped", 0)
+    if mp is None:
+        return finish(result, "no-map", "no risk map, so only the width is counted and nothing is stopped", 0)
+
+    attested, debts = load_attested(root), debt_todos(files)
+    missing = []
+    for todo in result["todos"]:
+        todo["status"], todo["detail"] = todo_status(todo, result, files, mp, attested, debts)
+        if todo["status"] == "attested":
+            todo["detail"] = attested[todo["name"]][:50]
+        if todo["status"] == "MISSING":
+            missing.append(todo)
+    mode = os.environ.get("RISK_GATE") or mp.get("gate", "strict")
+    if mode not in ("strict", "warn"):
+        raise Usage("RISK_GATE must be strict or warn")
+    if not missing:
+        return finish(result, "pass", "OK", 0)
+    result["missing"] = [t["name"] for t in missing]
+    if mode == "warn":
+        return finish(result, "warn", "warning only (RISK_GATE=warn), %d missing" % len(missing), 0)
+
+    if args.json:
+        return finish(result, "stopped", "", 2)
+    print(render(result))
+    print("gate: STOPPED, %d missing. Do the work, then record it (never --no-verify):" % len(missing))
+    for todo in missing[:6]:
+        print('  scripts/risk_level.py done %s "<what you did, what came out>"' % todo["name"])
+    if len(missing) > 6:
+        print("  ... and %d more, same form" % (len(missing) - 6))
+    debtable = [t["name"] for t in missing if t["name"] in DEBTABLE]
+    if debtable and result["depth"] != "critical":
+        print("  or, for a missing test, write it down as debt: scripts/test_debt.py add %s "
+              "--given ... --when ... --then ..." % debtable[0])
+    result["gate"] = "stopped"
+    return 2
 
 
 def cmd_map_coverage(args):
@@ -476,12 +632,19 @@ def main(argv):
     lv.add_argument("--base", help="compare the working tree with this ref")
     lv.add_argument("--json", action="store_true")
     lv.add_argument("--map", help="map file (default: %s)" % MAP_FILE)
+    gt = sub.add_parser("gate", help="judge the staged change (the pre-commit hook runs this)")
+    gt.add_argument("--json", action="store_true")
+    gt.add_argument("--map", help="map file (default: %s)" % MAP_FILE)
+    dn = sub.add_parser("done", help="attest a todo for the next commit")
+    dn.add_argument("todo")
+    dn.add_argument("text", help="what you did and what came out")
     cv = sub.add_parser("map-coverage", help="list tracked files the map does not know")
     cv.add_argument("--json", action="store_true")
     cv.add_argument("--map", help="map file (default: %s)" % MAP_FILE)
     try:
         args = ap.parse_args(argv)
-        return {"level": cmd_level, "map-coverage": cmd_map_coverage}[args.command](args)
+        return {"level": cmd_level, "gate": cmd_gate, "done": cmd_done,
+                "map-coverage": cmd_map_coverage}[args.command](args)
     except Usage as e:
         print("risk_level.py: %s" % e, file=sys.stderr)
         return 1
