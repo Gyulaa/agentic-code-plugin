@@ -54,3 +54,9 @@ The local branch is yours, the remote is the team's.
 - **After every merge, with or without conflicts, run the check, and push only when it is green.** A clean textual merge can still break: a rename in one PR and a new caller of the old name in another merge without a conflict and fail together.
 - **A default branch that does not build is a critical bug.** Put it in the bug list with an `origin:` line (the commits that met), tell the user, and fix it before anything else.
 - **Suggest, do not do:** that the user turn on "branches must be up to date before merging" or a merge queue on the protected branch, so a PR is checked against the branch it lands on. That setting is the user's.
+
+## 8. Pull requests and merging
+- **A PR's base is the default branch.** Do not stack PRs (a PR whose base is another feature branch) unless the user asks for it; open the second PR after the first has merged, from the updated default branch.
+- **If stacking is unavoidable,** it breaks silently: when the lower PR merges and its branch stays, the upper PR can still be merged into that branch, and the default branch never gets the work. Name the order to the user, and retarget the upper PR before it is merged (`gh pr edit <n> --base <default>`).
+- **After every merge, check where the work landed.** `gh pr view <n> --json baseRefName,mergedAt` shows the base it merged into, and `git fetch && git merge-base --is-ancestor <head> origin/<default>` shows whether the default branch has the commits. When the base is not the default branch, say "merged into <base>", not "merged".
+- **Never state what the platform will do on its own** (retarget a PR, delete a branch, run a check, deploy) in a PR text, a plan or a reply unless you verified it in this repository, for example `gh api repos/<owner>/<repo> --jq .delete_branch_on_merge`. Otherwise write that you assume it and have not checked, or leave the claim out.

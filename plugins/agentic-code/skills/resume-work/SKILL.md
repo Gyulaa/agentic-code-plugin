@@ -12,7 +12,7 @@ Get back into the project with as few tokens as possible, then confirm the plan 
 2. Read **only** the state file (`STATE.md`, or the one `CLAUDE.md` names). Don't read decisions, bugs or session logs unless the state file or the topic ($ARGUMENTS) points to them.
 3. Check that the state is still true, cheaply:
    - `git -C <repo> fetch --quiet` and `git -C <repo> status -sb` for each repo the state mentions: current branch, ahead/behind, uncommitted files;
-   - for every PR the state lists as open: `gh pr view <n> --json state,mergedAt` (if `gh` is available);
+   - for every PR the state lists as open: `gh pr view <n> --json state,mergedAt,baseRefName` (if `gh` is available); a merged PR whose base is not the default branch has not reached it: check with `git merge-base --is-ancestor <head> origin/<default>` and say so;
    - if the state is older than the code (a branch merged, a PR closed), the code wins: say so, and offer to update the state at the next `/agentic-code:save-work`.
 4. Reply in the user's language, in at most ten lines:
    - where things stand (one or two lines);
