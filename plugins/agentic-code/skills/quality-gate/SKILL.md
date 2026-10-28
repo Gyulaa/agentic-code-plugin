@@ -44,6 +44,7 @@ Done means: the acceptance criteria are met, the machine check is green, and the
 ## Known traps
 - A bug in a shared component is fixed in the component, with its own test, in its own commit; don't work around it at the call site.
 - Live (possibly production) data in a simulator, browser or app: look only, no saves or deletes, unless it is a test environment.
+- A merge, even a clean one, can break the build (a rename meeting a new caller): run the check after every merge before pushing; see `git-workflow`, "Merging and conflicts".
 
 ## Measuring
 In a bug note, mark when a bug came from an earlier Claude change (`origin:` with the commit hash). That shows whether the work improves, and where this procedure needs tightening. Measure rather than assume: in a 2025 randomized study, experienced developers using AI took 19% longer while believing they were 20% faster.
